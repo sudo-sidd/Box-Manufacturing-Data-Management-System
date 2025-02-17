@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Overview</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+    <h1 class="mb-4">Inventory Overview</h1>
+
+    <h3>📦 Paper Reels</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>GSM</th>
+                <th>Size</th>
+                <th>Total Weight (Kg)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reel in paper_reels %}
+            <tr>
+                <td>{{ reel.gsm }}</td>
+                <td>{{ reel.size }}</td>
+                <td>{{ reel.total_weight }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>🛢️ Pasting Gum</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Gum Type</th>
+                <th>Total Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gum in pasting_gum %}
+            <tr>
+                <td>{{ gum.gum_type }}</td>
+                <td>{{ gum.total_qty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>🎨 Ink Stock</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Color</th>
+                <th>Total Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ink_item in ink %}
+            <tr>
+                <td>{{ ink_item.color }}</td>
+                <td>{{ ink_item.total_qty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>📏 Strapping Rolls</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Meters per Roll</th>
+                <th>Weight per Roll</th>
+                <th>Total Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for roll in strapping_rolls %}
+            <tr>
+                <td>{{ roll.roll_type }}</td>
+                <td>{{ roll.meters_per_roll }}</td>
+                <td>{{ roll.weight_per_roll }}</td>
+                <td>{{ roll.total_qty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>📍 Pin Coils</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Total Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for coil in pin_coils %}
+            <tr>
+                <td>{{ coil.coil_type }}</td>
+                <td>{{ coil.total_qty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'add_inventory' %}" class="btn btn-primary mt-4">➕ Add New Inventory</a>
+</body>
+</html>
