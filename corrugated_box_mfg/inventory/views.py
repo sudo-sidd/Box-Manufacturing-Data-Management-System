@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
-from .models import PaperReel, PastingGum, Ink, StrappingRoll, PinCoil, Preset
+from .models import PaperReel, PastingGum, Ink, StrappingRoll, PinCoil, Preset, InventoryLog
 from decimal import Decimal
 
 
@@ -12,6 +12,7 @@ def inventory_overview(request):
         'ink_stock': Ink.objects.all().order_by('-timestamp'),
         'strapping_rolls': StrappingRoll.objects.all().order_by('-timestamp'),
         'pin_coils': PinCoil.objects.all().order_by('-timestamp'),
+        'activity_logs': InventoryLog.objects.all()[:50]  # Show last 50 activities
     }
     return render(request, 'inventory/inventory_overview.html', context)
 
@@ -45,7 +46,7 @@ def add_inventory(request):
         }
 
         if item_type == "Paper Reel":
-            PaperReel.objects.create(
+            item = PaperReel.objects.create(
                 gsm=request.POST.get("gsm"),
                 bf=request.POST.get("bf"),
                 size=request.POST.get("size"),
@@ -54,7 +55,7 @@ def add_inventory(request):
             )
 
         elif item_type == "Pasting Gum":
-            PastingGum.objects.create(
+            item = PastingGum.objects.create(
                 gum_type=request.POST.get("gum_type"),
                 weight_per_bag=request.POST.get("weight_per_bag"),
                 total_qty=request.POST.get("total_qty"),
@@ -62,7 +63,7 @@ def add_inventory(request):
             )
 
         elif item_type == "Ink":
-            Ink.objects.create(
+            item = Ink.objects.create(
                 color=request.POST.get("color"),
                 weight_per_can=request.POST.get("weight_per_can"),
                 total_qty=request.POST.get("total_qty"),
@@ -70,7 +71,7 @@ def add_inventory(request):
             )
 
         elif item_type == "Strapping Roll":
-            StrappingRoll.objects.create(
+            item = StrappingRoll.objects.create(
                 roll_type=request.POST.get("roll_type"),
                 meters_per_roll=request.POST.get("meters_per_roll"),
                 weight_per_roll=request.POST.get("weight_per_roll"),
@@ -79,12 +80,16 @@ def add_inventory(request):
             )
 
         elif item_type == "Pin Coil":
-            PinCoil.objects.create(
+            item = PinCoil.objects.create(
                 coil_type=request.POST.get("coil_type"),
                 total_qty=request.POST.get("total_qty"),
                 **common_data
             )
 
+        # Log the action
+        details = f"Added {item_type} from {common_data['company_name']}"
+        log_inventory_action(item_type, item.id, 'ADD', details)
+        
         # Add success message
         messages.success(request, f"{item_type} added successfully!")
         return redirect("inventory_overview")
@@ -110,7 +115,12 @@ def delete_inventory(request, model_name, item_id):
             model = model_map.get(model_name)
             if model:
                 item = get_object_or_404(model, id=item_id)
+                details = f"Deleted {model_name} - {item.company_name}"
                 item.delete()
+                
+                # Log the action
+                log_inventory_action(model_name, item_id, 'DELETE', details)
+                
                 return JsonResponse({
                     'status': 'success',
                     'message': f'{model_name.replace("_", " ").title()} deleted successfully'
@@ -174,6 +184,11 @@ def edit_inventory(request, model_name, item_id):
                 item.total_qty = int(request.POST.get('total_qty'))
 
             item.save()  # This will trigger the save method to recalculate totals
+            
+            # Log the action
+            details = f"Modified {model_name} - {item.company_name}"
+            log_inventory_action(model_name, item_id, 'EDIT', details)
+            
             return JsonResponse({'status': 'success'})
             
         except Exception as e:
@@ -222,3 +237,11 @@ def edit_inventory(request, model_name, item_id):
         })
     
     return JsonResponse({'status': 'success', 'data': data})
+
+def log_inventory_action(item_type, item_id, action, details):
+    InventoryLog.objects.create(
+        item_type=item_type,
+        item_id=item_id,
+        action=action,
+        details=details
+    )

@@ -84,3 +84,20 @@ class StrappingRoll(BaseInventory):
 class PinCoil(BaseInventory):
     coil_type = models.CharField(max_length=50)
     total_qty = models.PositiveIntegerField()
+
+class InventoryLog(models.Model):
+    ACTION_CHOICES = [
+        ('ADD', 'Added'),
+        ('EDIT', 'Modified'),
+        ('DELETE', 'Deleted')
+    ]
+    
+    item_type = models.CharField(max_length=50)
+    item_id = models.IntegerField()
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    details = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    user = models.CharField(max_length=100, default='System')  # Can be linked to Django User model later
+
+    class Meta:
+        ordering = ['-timestamp']
