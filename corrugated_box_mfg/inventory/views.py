@@ -1,7 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.contrib import messages  # Add this import at the top
+from django.contrib import messages
 from .models import PaperReel, PastingGum, Ink, StrappingRoll, PinCoil, Preset
+from decimal import Decimal
 
 
 def inventory_overview(request):
@@ -93,3 +94,131 @@ def get_presets(request):
     category = request.GET.get("category")
     presets = Preset.objects.filter(category=category).values_list("value", flat=True)
     return JsonResponse(list(presets), safe=False)
+
+def delete_inventory(request, model_name, item_id):
+    # Map URL parameters to model classes
+    model_map = {
+        'paper_reels': PaperReel,
+        'pasting_gum': PastingGum,
+        'ink_stock': Ink,
+        'strapping_rolls': StrappingRoll,
+        'pin_coils': PinCoil
+    }
+    
+    if request.method == 'POST':
+        try:
+            model = model_map.get(model_name)
+            if model:
+                item = get_object_or_404(model, id=item_id)
+                item.delete()
+                return JsonResponse({
+                    'status': 'success',
+                    'message': f'{model_name.replace("_", " ").title()} deleted successfully'
+                })
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid model name'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+def edit_inventory(request, model_name, item_id):
+    # Map URL parameters to model classes
+    model_map = {
+        'paper_reels': PaperReel,
+        'pasting_gum': PastingGum,
+        'ink_stock': Ink,
+        'strapping_rolls': StrappingRoll,
+        'pin_coils': PinCoil
+    }
+    
+    model = model_map.get(model_name)
+    if not model:
+        return JsonResponse({'status': 'error', 'message': 'Invalid model name'})
+        
+    item = get_object_or_404(model, id=item_id)
+    
+    if request.method == 'POST':
+        try:
+            # Update common fields
+            item.company_name = request.POST.get('company_name')
+            item.price_per_kg = Decimal(request.POST.get('price_per_kg'))
+            item.freight = Decimal(request.POST.get('freight'))
+            item.extra_charges = Decimal(request.POST.get('extra_charges'))
+            item.tax_percent = Decimal(request.POST.get('tax_percent'))
+
+            # Update model-specific fields
+            if model_name == 'paper_reels':
+                item.gsm = int(request.POST.get('gsm'))
+                item.bf = request.POST.get('bf')
+                item.size = request.POST.get('size')
+                item.total_weight = Decimal(request.POST.get('total_weight'))
+            elif model_name in ['pasting_gum', 'ink_stock', 'pin_coils']:
+                item.total_qty = int(request.POST.get('total_qty'))
+                if model_name == 'pasting_gum':
+                    item.gum_type = request.POST.get('gum_type')
+                    item.weight_per_bag = Decimal(request.POST.get('weight_per_bag'))
+                elif model_name == 'ink_stock':
+                    item.color = request.POST.get('color')
+                    item.weight_per_can = Decimal(request.POST.get('weight_per_can'))
+                else:  # pin_coils
+                    item.coil_type = request.POST.get('coil_type')
+            elif model_name == 'strapping_rolls':
+                item.roll_type = request.POST.get('roll_type')
+                item.meters_per_roll = int(request.POST.get('meters_per_roll'))
+                item.weight_per_roll = Decimal(request.POST.get('weight_per_roll'))
+                item.total_qty = int(request.POST.get('total_qty'))
+
+            item.save()  # This will trigger the save method to recalculate totals
+            return JsonResponse({'status': 'success'})
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    # GET request - return current data
+    data = {
+        'company_name': item.company_name,
+        'price_per_kg': str(item.price_per_kg),
+        'freight': str(item.freight),
+        'extra_charges': str(item.extra_charges),
+        'tax_percent': str(item.tax_percent),
+    }
+    
+    # Add model-specific fields
+    if model_name == 'paper_reels':
+        data.update({
+            'gsm': item.gsm,
+            'bf': item.bf,
+            'size': item.size,
+            'total_weight': str(item.total_weight)
+        })
+    elif model_name == 'pasting_gum':
+        data.update({
+            'gum_type': item.gum_type,
+            'weight_per_bag': str(item.weight_per_bag),
+            'total_qty': item.total_qty
+        })
+    elif model_name == 'ink_stock':
+        data.update({
+            'color': item.color,
+            'weight_per_can': str(item.weight_per_can),
+            'total_qty': item.total_qty
+        })
+    elif model_name == 'strapping_rolls':
+        data.update({
+            'roll_type': item.roll_type,
+            'meters_per_roll': item.meters_per_roll,
+            'weight_per_roll': str(item.weight_per_roll),
+            'total_qty': item.total_qty
+        })
+    elif model_name == 'pin_coils':
+        data.update({
+            'coil_type': item.coil_type,
+            'total_qty': item.total_qty
+        })
+    
+    return JsonResponse({'status': 'success', 'data': data})

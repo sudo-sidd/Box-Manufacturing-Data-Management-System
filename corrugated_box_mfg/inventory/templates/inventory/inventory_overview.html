@@ -3,6 +3,17 @@
 {% block title %}Inventory Overview{% endblock %}
 
 {% block content %}
+{% csrf_token %}
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 <div class="mb-4 d-flex justify-content-between align-items-center">
     <div>
         <h1 class="display-5 mb-1">Inventory Overview</h1>
@@ -46,7 +57,7 @@
                         </thead>
                         <tbody>
                             {% for reel in paper_reels %}
-                            <tr>
+                            <tr data-id="{{ reel.id }}">
                                 <td>{{ reel.gsm }}</td>
                                 <td>{{ reel.bf }}</td>
                                 <td>{{ reel.size }}</td>
@@ -62,10 +73,10 @@
                                 <td>{{ reel.timestamp|date:"d-m-Y" }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem('paper_reels', {{ reel.id }})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('paper_reels', {{ reel.id }})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -110,7 +121,7 @@
                         </thead>
                         <tbody>
                             {% for gum in pasting_gum %}
-                            <tr>
+                            <tr data-id="{{ gum.id }}">
                                 <td>{{ gum.gum_type }}</td>
                                 <td>{{ gum.weight_per_bag }}</td>
                                 <td>{{ gum.total_qty }}</td>
@@ -125,10 +136,10 @@
                                 <td>{{ gum.timestamp|date:"d-m-Y" }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem('pasting_gum', {{ gum.id }})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('pasting_gum', {{ gum.id }})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -173,7 +184,7 @@
                         </thead>
                         <tbody>
                             {% for ink in ink_stock %}
-                            <tr>
+                            <tr data-id="{{ ink.id }}">
                                 <td>{{ ink.color }}</td>
                                 <td>{{ ink.weight_per_can }}</td>
                                 <td>{{ ink.total_qty }}</td>
@@ -188,10 +199,10 @@
                                 <td>{{ ink.timestamp|date:"d-m-Y" }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem('ink_stock', {{ink.id}})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('ink_stock', {{ ink.id }})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -237,7 +248,7 @@
                         </thead>
                         <tbody>
                             {% for roll in strapping_rolls %}
-                            <tr>
+                            <tr data-id="{{ roll.id }}">
                                 <td>{{ roll.roll_type }}</td>
                                 <td>{{ roll.meters_per_roll }}</td>
                                 <td>{{ roll.weight_per_roll }}</td>
@@ -253,10 +264,10 @@
                                 <td>{{ roll.timestamp|date:"d-m-Y" }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem('strapping_rolls', {{ roll.id }})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('strapping_rolls', {{ roll.id }})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -300,7 +311,7 @@
                         </thead>
                         <tbody>
                             {% for coil in pin_coils %}
-                            <tr>
+                            <tr data-id="{{ coil.id }}">
                                 <td>{{ coil.coil_type }}</td>
                                 <td>{{ coil.total_qty }}</td>
                                 <td>{{ coil.company_name }}</td>
@@ -314,10 +325,10 @@
                                 <td>{{ coil.timestamp|date:"d-m-Y" }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editItem('pin_coils', {{ coil.id }})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('pin_coils', {{ coil.id }})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -360,6 +371,160 @@ function exportTable(tableId) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// Delete functionality
+function deleteItem(modelName, itemId) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        fetch(`/inventory/delete/${modelName}/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Remove the row from the table
+                const row = document.querySelector(`tr[data-id="${itemId}"]`);
+                if (row) {
+                    row.remove();
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert('Error deleting item: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting item');
+        });
+    }
+}
+
+// Edit functionality
+function editItem(modelName, itemId) {
+    fetch(`/inventory/edit/${modelName}/${itemId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showEditModal(modelName, itemId, data.data);
+            } else {
+                alert('Error loading item data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading item data');
+        });
+}
+
+function showEditModal(modelName, itemId, data) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('editModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalHtml = createModalHtml(modelName, data);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+    
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        fetch(`/inventory/edit/${modelName}/${itemId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                modal.hide();
+                location.reload();
+            } else {
+                alert('Error updating item: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating item');
+        });
+    });
+}
+
+function createModalHtml(modelName, data) {
+    let fieldsHtml = '';
+    
+    // Common fields first
+    fieldsHtml += createInputField('company_name', data.company_name, 'Company Name');
+    fieldsHtml += createInputField('price_per_kg', data.price_per_kg, 'Price per Kg', 'number', '0.01');
+    fieldsHtml += createInputField('freight', data.freight, 'Freight', 'number', '0.01');
+    fieldsHtml += createInputField('extra_charges', data.extra_charges, 'Extra Charges', 'number', '0.01');
+    fieldsHtml += createInputField('tax_percent', data.tax_percent, 'Tax Percentage', 'number', '0.01');
+    
+    // Model-specific fields
+    switch(modelName) {
+        case 'paper_reels':
+            fieldsHtml += createInputField('gsm', data.gsm, 'GSM', 'number');
+            fieldsHtml += createInputField('bf', data.bf, 'BF');
+            fieldsHtml += createInputField('size', data.size, 'Size');
+            fieldsHtml += createInputField('total_weight', data.total_weight, 'Total Weight', 'number', '0.01');
+            break;
+        case 'pasting_gum':
+            fieldsHtml += createInputField('gum_type', data.gum_type, 'Gum Type');
+            fieldsHtml += createInputField('weight_per_bag', data.weight_per_bag, 'Weight per Bag', 'number', '0.01');
+            fieldsHtml += createInputField('total_qty', data.total_qty, 'Total Quantity', 'number');
+            break;
+        // ... add other cases for different models
+    }
+    
+    return `
+        <div class="modal fade" id="editModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit ${modelName.replace(/_/g, ' ').toUpperCase()}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editForm">
+                            <div class="row">
+                                ${fieldsHtml}
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary">Save changes</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createInputField(name, value, label, type = 'text', step = null) {
+    return `
+        <div class="col-md-6 mb-3">
+            <label for="${name}" class="form-label">${label}</label>
+            <input type="${type}" 
+                   class="form-control" 
+                   id="${name}" 
+                   name="${name}" 
+                   value="${value || ''}"
+                   ${step ? `step="${step}"` : ''}
+                   required>
+        </div>
+    `;
 }
 </script>
 {% endblock %}

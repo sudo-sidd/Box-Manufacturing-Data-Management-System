@@ -40,6 +40,25 @@ class BaseInventory(models.Model):
     class Meta:
         abstract = True
 
+    def save(self, *args, **kwargs):
+        # Calculate total price ex tax
+        if hasattr(self, 'total_weight'):
+            quantity = float(self.total_weight)
+        elif hasattr(self, 'total_qty'):
+            quantity = float(self.total_qty)
+        else:
+            quantity = 1
+            
+        self.total_price_ex_tax = (float(self.price_per_kg) * quantity) + float(self.freight) + float(self.extra_charges)
+        
+        # Calculate tax amount
+        self.tax_amount = (float(self.total_price_ex_tax) * float(self.tax_percent)) / 100
+        
+        # Calculate total price
+        self.total_price = float(self.total_price_ex_tax) + float(self.tax_amount)
+        
+        super().save(*args, **kwargs)
+
 class PaperReel(BaseInventory):
     gsm = models.PositiveIntegerField()
     bf = models.CharField(max_length=50)

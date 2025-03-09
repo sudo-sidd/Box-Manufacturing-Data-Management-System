@@ -67,6 +67,32 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Price Ex Tax</h6>
+                                <p class="card-text h4" id="totalPriceExTax">₹0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Tax Amount</h6>
+                                <p class="card-text h4" id="taxAmount">₹0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Total Amount</h6>
+                                <p class="card-text h4" id="totalAmount">₹0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Add Item
                 </button>
@@ -209,6 +235,48 @@ const formTemplates = {
     `
 };
 
+function calculateTotals() {
+    const itemType = document.getElementById('item_type').value;
+    const pricePerKg = parseFloat(document.getElementById('price_per_kg').value) || 0;
+    const freight = parseFloat(document.getElementById('freight').value) || 0;
+    const extraCharges = parseFloat(document.getElementById('extra_charges').value) || 0;
+    const taxPercent = parseFloat(document.getElementById('tax_percent').value) || 0;
+    
+    let quantity = 0;
+    
+    // Get quantity based on item type
+    if (itemType === 'Paper Reel') {
+        quantity = parseFloat(document.getElementById('total_weight')?.value) || 0;
+    } else {
+        const totalQty = document.getElementById('total_qty')?.value || 0;
+        const weightPerUnit = parseFloat(
+            document.getElementById('weight_per_bag')?.value || 
+            document.getElementById('weight_per_can')?.value || 
+            document.getElementById('weight_per_roll')?.value || 
+            0
+        );
+        quantity = totalQty * weightPerUnit;
+    }
+
+    // Calculate totals
+    const totalPriceExTax = (pricePerKg * quantity) + freight + extraCharges;
+    const taxAmount = (totalPriceExTax * taxPercent) / 100;
+    const totalAmount = totalPriceExTax + taxAmount;
+
+    // Update display
+    document.getElementById('totalPriceExTax').textContent = `₹${totalPriceExTax.toFixed(2)}`;
+    document.getElementById('taxAmount').textContent = `₹${taxAmount.toFixed(2)}`;
+    document.getElementById('totalAmount').textContent = `₹${totalAmount.toFixed(2)}`;
+}
+
+// Add event listeners to all input fields
+function addCalculationListeners() {
+    const inputs = document.querySelectorAll('input[type="number"]');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+}
+
 function showItemForm() {
     const itemType = document.getElementById('item_type').value;
     const dynamicFormFields = document.getElementById('dynamicFormFields');
@@ -217,10 +285,19 @@ function showItemForm() {
     if (itemType) {
         dynamicFormFields.innerHTML = formTemplates[itemType] || '';
         commonFields.style.display = 'block';
+        addCalculationListeners(); // Add listeners after form is populated
     } else {
         dynamicFormFields.innerHTML = '';
         commonFields.style.display = 'none';
     }
 }
+
+// Add listeners to common fields
+document.addEventListener('DOMContentLoaded', function() {
+    const commonInputs = document.querySelectorAll('#commonFields input[type="number"]');
+    commonInputs.forEach(input => {
+        input.addEventListener('input', calculateTotals);
+    });
+});
 </script>
 {% endblock %}
