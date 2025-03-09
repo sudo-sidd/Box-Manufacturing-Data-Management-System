@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Box List{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Box Specifications</h1>
+    <a href="{% url 'finished_goods:box-create' %}" class="btn btn-primary">
+        Add New Box
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Box Name</th>
+                <th>Dimensions (L×B×H)</th>
+                <th>Flute Type</th>
+                <th>Plies</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for box in boxes %}
+            <tr>
+                <td>{{ box.box_name }}</td>
+                <td>{{ box.length }}×{{ box.breadth }}×{{ box.height }}</td>
+                <td>{{ box.flute_type }}</td>
+                <td>{{ box.num_plies }}</td>
+                <td>
+                    <a href="{% url 'finished_goods:box-detail' box.pk %}" class="btn btn-sm btn-info">View</a>
+                    <a href="{% url 'finished_goods:box-update' box.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No boxes available</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
