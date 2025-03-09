@@ -1,19 +1,19 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
+from django.contrib import messages  # Add this import at the top
 from .models import PaperReel, PastingGum, Ink, StrappingRoll, PinCoil, Preset
 
 
 def inventory_overview(request):
-    """ Fetches and displays current stock for all inventory items """
-    stock_data = {
-        "paper_reels": PaperReel.objects.values("gsm", "size", "total_weight"),
-        "pasting_gum": PastingGum.objects.values("gum_type", "total_qty"),
-        "ink": Ink.objects.values("color", "total_qty"),
-        "strapping_rolls": StrappingRoll.objects.values("roll_type", "meters_per_roll", "weight_per_roll", "total_qty"),
-        "pin_coils": PinCoil.objects.values("coil_type", "total_qty"),
+    context = {
+        'paper_reels': PaperReel.objects.all().order_by('-timestamp'),
+        'pasting_gum': PastingGum.objects.all().order_by('-timestamp'),
+        'ink_stock': Ink.objects.all().order_by('-timestamp'),
+        'strapping_rolls': StrappingRoll.objects.all().order_by('-timestamp'),
+        'pin_coils': PinCoil.objects.all().order_by('-timestamp'),
     }
+    return render(request, 'inventory/inventory_overview.html', context)
 
-    return render(request, "inventory/inventory_overview.html", stock_data)
 def inventory_home(request):
     return render(request, "inventory/home.html")
 
@@ -84,6 +84,8 @@ def add_inventory(request):
                 **common_data
             )
 
+        # Add success message
+        messages.success(request, f"{item_type} added successfully!")
         return redirect("inventory_overview")
     return render(request, "inventory/add_inventory.html")
 

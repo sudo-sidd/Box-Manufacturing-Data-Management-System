@@ -1,110 +1,366 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Overview</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="container mt-5">
-    <h1 class="mb-4">Inventory Overview</h1>
+{% extends 'base.html' %}
 
-    <h3>📦 Paper Reels</h3>
-    <table class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>GSM</th>
-                <th>Size</th>
-                <th>Total Weight (Kg)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for reel in paper_reels %}
-            <tr>
-                <td>{{ reel.gsm }}</td>
-                <td>{{ reel.size }}</td>
-                <td>{{ reel.total_weight }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% block title %}Inventory Overview{% endblock %}
 
-    <h3>🛢️ Pasting Gum</h3>
-    <table class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>Gum Type</th>
-                <th>Total Quantity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for gum in pasting_gum %}
-            <tr>
-                <td>{{ gum.gum_type }}</td>
-                <td>{{ gum.total_qty }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="display-5 mb-1">Inventory Overview</h1>
+        <p class="text-muted">Current stock levels and inventory status</p>
+    </div>
+    <a href="{% url 'add_inventory' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-plus-circle"></i> Add Inventory
+    </a>
+</div>
 
-    <h3>🎨 Ink Stock</h3>
-    <table class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>Color</th>
-                <th>Total Quantity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ink_item in ink %}
-            <tr>
-                <td>{{ ink_item.color }}</td>
-                <td>{{ ink_item.total_qty }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="row g-4">
+    <!-- Paper Reels Card -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-box"></i> Paper Reels</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('paper-reels-table')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="paper-reels-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>GSM</th>
+                                <th>BF</th>
+                                <th>Size</th>
+                                <th>Weight (Kg)</th>
+                                <th>Company</th>
+                                <th>Price/Kg</th>
+                                <th>Freight</th>
+                                <th>Extra</th>
+                                <th>Ex Tax</th>
+                                <th>Tax %</th>
+                                <th>Tax Amt</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reel in paper_reels %}
+                            <tr>
+                                <td>{{ reel.gsm }}</td>
+                                <td>{{ reel.bf }}</td>
+                                <td>{{ reel.size }}</td>
+                                <td>{{ reel.total_weight }}</td>
+                                <td>{{ reel.company_name }}</td>
+                                <td>{{ reel.price_per_kg }}</td>
+                                <td>{{ reel.freight }}</td>
+                                <td>{{ reel.extra_charges }}</td>
+                                <td>{{ reel.total_price_ex_tax }}</td>
+                                <td>{{ reel.tax_percent }}%</td>
+                                <td>{{ reel.tax_amount }}</td>
+                                <td>{{ reel.total_price }}</td>
+                                <td>{{ reel.timestamp|date:"d-m-Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <h3>📏 Strapping Rolls</h3>
-    <table class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Meters per Roll</th>
-                <th>Weight per Roll</th>
-                <th>Total Quantity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for roll in strapping_rolls %}
-            <tr>
-                <td>{{ roll.roll_type }}</td>
-                <td>{{ roll.meters_per_roll }}</td>
-                <td>{{ roll.weight_per_roll }}</td>
-                <td>{{ roll.total_qty }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Pasting Gum Card -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-droplet"></i> Pasting Gum</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('gum-table')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="gum-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Weight/Bag</th>
+                                <th>Quantity</th>
+                                <th>Company</th>
+                                <th>Price/Kg</th>
+                                <th>Freight</th>
+                                <th>Extra</th>
+                                <th>Ex Tax</th>
+                                <th>Tax %</th>
+                                <th>Tax Amt</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gum in pasting_gum %}
+                            <tr>
+                                <td>{{ gum.gum_type }}</td>
+                                <td>{{ gum.weight_per_bag }}</td>
+                                <td>{{ gum.total_qty }}</td>
+                                <td>{{ gum.company_name }}</td>
+                                <td>{{ gum.price_per_kg }}</td>
+                                <td>{{ gum.freight }}</td>
+                                <td>{{ gum.extra_charges }}</td>
+                                <td>{{ gum.total_price_ex_tax }}</td>
+                                <td>{{ gum.tax_percent }}%</td>
+                                <td>{{ gum.tax_amount }}</td>
+                                <td>{{ gum.total_price }}</td>
+                                <td>{{ gum.timestamp|date:"d-m-Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <h3>📍 Pin Coils</h3>
-    <table class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Total Quantity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for coil in pin_coils %}
-            <tr>
-                <td>{{ coil.coil_type }}</td>
-                <td>{{ coil.total_qty }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Ink Stock Card -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-palette"></i> Ink Stock</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('ink-table')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="ink-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Color</th>
+                                <th>Weight/Can</th>
+                                <th>Quantity</th>
+                                <th>Company</th>
+                                <th>Price/Kg</th>
+                                <th>Freight</th>
+                                <th>Extra</th>
+                                <th>Ex Tax</th>
+                                <th>Tax %</th>
+                                <th>Tax Amt</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ink in ink_stock %}
+                            <tr>
+                                <td>{{ ink.color }}</td>
+                                <td>{{ ink.weight_per_can }}</td>
+                                <td>{{ ink.total_qty }}</td>
+                                <td>{{ ink.company_name }}</td>
+                                <td>{{ ink.price_per_kg }}</td>
+                                <td>{{ ink.freight }}</td>
+                                <td>{{ ink.extra_charges }}</td>
+                                <td>{{ ink.total_price_ex_tax }}</td>
+                                <td>{{ ink.tax_percent }}%</td>
+                                <td>{{ ink.tax_amount }}</td>
+                                <td>{{ ink.total_price }}</td>
+                                <td>{{ ink.timestamp|date:"d-m-Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <a href="{% url 'add_inventory' %}" class="btn btn-primary mt-4">➕ Add New Inventory</a>
-</body>
-</html>
+    <!-- Strapping Roll Card -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-circle"></i> Strapping Roll</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('strapping-table')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="strapping-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Meters/Roll</th>
+                                <th>Weight/Roll</th>
+                                <th>Quantity</th>
+                                <th>Company</th>
+                                <th>Price/Kg</th>
+                                <th>Freight</th>
+                                <th>Extra</th>
+                                <th>Ex Tax</th>
+                                <th>Tax %</th>
+                                <th>Tax Amt</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for roll in strapping_rolls %}
+                            <tr>
+                                <td>{{ roll.roll_type }}</td>
+                                <td>{{ roll.meters_per_roll }}</td>
+                                <td>{{ roll.weight_per_roll }}</td>
+                                <td>{{ roll.total_qty }}</td>
+                                <td>{{ roll.company_name }}</td>
+                                <td>{{ roll.price_per_kg }}</td>
+                                <td>{{ roll.freight }}</td>
+                                <td>{{ roll.extra_charges }}</td>
+                                <td>{{ roll.total_price_ex_tax }}</td>
+                                <td>{{ roll.tax_percent }}%</td>
+                                <td>{{ roll.tax_amount }}</td>
+                                <td>{{ roll.total_price }}</td>
+                                <td>{{ roll.timestamp|date:"d-m-Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pin Coil Card -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-pin"></i> Pin Coil</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('pincoil-table')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="pincoil-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Company</th>
+                                <th>Price/Kg</th>
+                                <th>Freight</th>
+                                <th>Extra</th>
+                                <th>Ex Tax</th>
+                                <th>Tax %</th>
+                                <th>Tax Amt</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coil in pin_coils %}
+                            <tr>
+                                <td>{{ coil.coil_type }}</td>
+                                <td>{{ coil.total_qty }}</td>
+                                <td>{{ coil.company_name }}</td>
+                                <td>{{ coil.price_per_kg }}</td>
+                                <td>{{ coil.freight }}</td>
+                                <td>{{ coil.extra_charges }}</td>
+                                <td>{{ coil.total_price_ex_tax }}</td>
+                                <td>{{ coil.tax_percent }}%</td>
+                                <td>{{ coil.tax_amount }}</td>
+                                <td>{{ coil.total_price }}</td>
+                                <td>{{ coil.timestamp|date:"d-m-Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% block extra_js %}
+<script>
+function exportTable(tableId) {
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName('tr');
+    let csv = [];
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cols = row.querySelectorAll('td, th');
+        let csvRow = [];
+        
+        for (let j = 0; j < cols.length - 1; j++) { // Skip the Actions column
+            csvRow.push(cols[j].innerText);
+        }
+        
+        csv.push(csvRow.join(','));
+    }
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${tableId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}
+{% endblock %}

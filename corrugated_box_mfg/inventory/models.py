@@ -27,15 +27,14 @@ class Preset(models.Model):
         return f"{self.get_category_display()}: {self.value}"
 
 class BaseInventory(models.Model):
-    price_per_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    freight = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    extra_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    total_price_ex_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
-    tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
-    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
-    company_name = models.CharField(max_length=100, default="Unknown")
-
+    company_name = models.CharField(max_length=100)
+    price_per_kg = models.DecimalField(max_digits=10, decimal_places=2)
+    freight = models.DecimalField(max_digits=10, decimal_places=2)
+    extra_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price_ex_tax = models.DecimalField(max_digits=12, decimal_places=2)
+    tax_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -43,26 +42,26 @@ class BaseInventory(models.Model):
 
 class PaperReel(BaseInventory):
     gsm = models.PositiveIntegerField()
-    bf = models.CharField(max_length=50, default="N/A")
+    bf = models.CharField(max_length=50)
     size = models.CharField(max_length=50)
-    total_weight = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    total_weight = models.DecimalField(max_digits=10, decimal_places=2)
 
 class PastingGum(BaseInventory):
     gum_type = models.CharField(max_length=50)
-    weight_per_bag = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    total_qty = models.PositiveIntegerField(default=0)
+    weight_per_bag = models.DecimalField(max_digits=10, decimal_places=2)
+    total_qty = models.PositiveIntegerField()
 
 class Ink(BaseInventory):
     color = models.CharField(max_length=50)
-    weight_per_can = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    total_qty = models.PositiveIntegerField(default=0)
+    weight_per_can = models.DecimalField(max_digits=10, decimal_places=2)
+    total_qty = models.PositiveIntegerField()
 
 class StrappingRoll(BaseInventory):
-    roll_type = models.CharField(max_length=50, default="Standard")
-    meters_per_roll = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    weight_per_roll = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    total_qty = models.PositiveIntegerField(default=0)
+    roll_type = models.CharField(max_length=50)
+    meters_per_roll = models.PositiveIntegerField()
+    weight_per_roll = models.DecimalField(max_digits=10, decimal_places=2)
+    total_qty = models.PositiveIntegerField()
 
 class PinCoil(BaseInventory):
-    coil_type = models.CharField(max_length=50, default="Standard")
-    total_qty = models.PositiveIntegerField(default=0)
+    coil_type = models.CharField(max_length=50)
+    total_qty = models.PositiveIntegerField()
