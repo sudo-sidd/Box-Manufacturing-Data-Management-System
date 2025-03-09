@@ -1,14 +1,5 @@
 from django.db import models
 
-class InventorySummary(models.Model):
-    item_type = models.CharField(max_length=50)
-    gsm = models.PositiveIntegerField(null=True, blank=True)
-    total_weight = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    last_updated = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.item_type} - GSM {self.gsm}"
-
 
 class Preset(models.Model):
     CATEGORY_CHOICES = [

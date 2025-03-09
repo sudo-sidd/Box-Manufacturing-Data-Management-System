@@ -1,20 +1,53 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
-from .models import PaperReel, PastingGum, Ink, StrappingRoll, PinCoil, Preset, InventoryLog
+from django.db.models import Sum, Avg
+from .models import (
+    # Transaction Models
+    PaperReel, PastingGum, Ink, StrappingRoll, PinCoil,
+    # Summary Models
+    PaperReelSummary, PastingGumSummary, InkSummary, 
+    StrappingRollSummary, PinCoilSummary,
+    # Other Models
+    Preset, InventoryLog
+)
 from decimal import Decimal
 
 
 def inventory_overview(request):
+    view_type = request.GET.get('view', 'summary')
+    
     context = {
+        'view_type': view_type,
+        'paper_reels': PaperReelSummary.objects.all() if view_type == 'summary' else PaperReel.objects.all().order_by('-timestamp'),
+        'pasting_gum': PastingGumSummary.objects.all() if view_type == 'summary' else PastingGum.objects.all().order_by('-timestamp'),
+        'ink_stock': InkSummary.objects.all() if view_type == 'summary' else Ink.objects.all().order_by('-timestamp'),
+        'strapping_rolls': StrappingRollSummary.objects.all() if view_type == 'summary' else StrappingRoll.objects.all().order_by('-timestamp'),
+        'pin_coils': PinCoilSummary.objects.all() if view_type == 'summary' else PinCoil.objects.all().order_by('-timestamp'),
+        'activity_logs': InventoryLog.objects.all()[:50]
+    }
+    
+    return render(request, 'inventory/inventory_overview.html', context)
+
+def get_summary_context():
+    """Get aggregated inventory data"""
+    return {
+        'paper_reels': PaperReelSummary.objects.all(),
+        'pasting_gum': PastingGumSummary.objects.all(),
+        'ink_stock': InkSummary.objects.all(),
+        'strapping_rolls': StrappingRollSummary.objects.all(),
+        'pin_coils': PinCoilSummary.objects.all(),
+    }
+
+def get_transaction_context():
+    """Get detailed transaction history"""
+    return {
         'paper_reels': PaperReel.objects.all().order_by('-timestamp'),
         'pasting_gum': PastingGum.objects.all().order_by('-timestamp'),
         'ink_stock': Ink.objects.all().order_by('-timestamp'),
         'strapping_rolls': StrappingRoll.objects.all().order_by('-timestamp'),
         'pin_coils': PinCoil.objects.all().order_by('-timestamp'),
-        'activity_logs': InventoryLog.objects.all()[:50]  # Show last 50 activities
     }
-    return render(request, 'inventory/inventory_overview.html', context)
 
 def inventory_home(request):
     return render(request, "inventory/home.html")
@@ -34,65 +67,41 @@ def calculate_prices(quantity, price_per_kg, freight, extra_charges, tax_percent
 
 def add_inventory(request):
     if request.method == "POST":
-        item_type = request.POST.get("item_type")
-        company_name = request.POST.get("company_name")
+        try:
+            item_type = request.POST.get("item_type")
+            common_data = {
+                "company_name": request.POST.get("company_name"),
+                "price_per_kg": float(request.POST.get("price_per_kg", 0)),
+                "freight": float(request.POST.get("freight", 0)),
+                "extra_charges": float(request.POST.get("extra_charges", 0)),
+                "tax_percent": float(request.POST.get("tax_percent", 0)),
+            }
 
-        common_data = {
-            "company_name": company_name,
-            "price_per_kg": float(request.POST.get("price_per_kg", 0)),
-            "freight": float(request.POST.get("freight", 0)),
-            "extra_charges": float(request.POST.get("extra_charges", 0)),
-            "tax_percent": float(request.POST.get("tax_percent", 0)),
-        }
+            if item_type == "Paper Reel":
+                item = PaperReel.objects.create(
+                    gsm=int(request.POST.get("gsm")),
+                    bf=request.POST.get("bf"),
+                    size=request.POST.get("size"),
+                    total_weight=float(request.POST.get("total_weight")),
+                    **common_data
+                )
 
-        if item_type == "Paper Reel":
-            item = PaperReel.objects.create(
-                gsm=request.POST.get("gsm"),
-                bf=request.POST.get("bf"),
-                size=request.POST.get("size"),
-                total_weight=request.POST.get("total_weight"),
-                **common_data
-            )
+            # ... rest of your item type conditions ...
 
-        elif item_type == "Pasting Gum":
-            item = PastingGum.objects.create(
-                gum_type=request.POST.get("gum_type"),
-                weight_per_bag=request.POST.get("weight_per_bag"),
-                total_qty=request.POST.get("total_qty"),
-                **common_data
-            )
-
-        elif item_type == "Ink":
-            item = Ink.objects.create(
-                color=request.POST.get("color"),
-                weight_per_can=request.POST.get("weight_per_can"),
-                total_qty=request.POST.get("total_qty"),
-                **common_data
-            )
-
-        elif item_type == "Strapping Roll":
-            item = StrappingRoll.objects.create(
-                roll_type=request.POST.get("roll_type"),
-                meters_per_roll=request.POST.get("meters_per_roll"),
-                weight_per_roll=request.POST.get("weight_per_roll"),
-                total_qty=request.POST.get("total_qty"),
-                **common_data
-            )
-
-        elif item_type == "Pin Coil":
-            item = PinCoil.objects.create(
-                coil_type=request.POST.get("coil_type"),
-                total_qty=request.POST.get("total_qty"),
-                **common_data
-            )
-
-        # Log the action
-        details = f"Added {item_type} from {common_data['company_name']}"
-        log_inventory_action(item_type, item.id, 'ADD', details)
-        
-        # Add success message
-        messages.success(request, f"{item_type} added successfully!")
-        return redirect("inventory_overview")
+            # Log the action
+            details = f"Added {item_type} from {common_data['company_name']}"
+            log_inventory_action(item_type, item.id, 'ADD', details)
+            
+            # Update summary tables
+            update_summary_tables(item, action='add')
+            
+            messages.success(request, f"{item_type} added successfully!")
+            return redirect("inventory_overview")
+            
+        except Exception as e:
+            messages.error(request, f"Error adding inventory: {str(e)}")
+            return redirect("add_inventory")
+            
     return render(request, "inventory/add_inventory.html")
 
 def get_presets(request):
@@ -106,7 +115,7 @@ def delete_inventory(request, model_name, item_id):
         'paper_reels': PaperReel,
         'pasting_gum': PastingGum,
         'ink_stock': Ink,
-        'strapping_rolls': StrappingRoll,
+        'strapping_roll': StrappingRoll,
         'pin_coils': PinCoil
     }
     
@@ -116,6 +125,7 @@ def delete_inventory(request, model_name, item_id):
             if model:
                 item = get_object_or_404(model, id=item_id)
                 details = f"Deleted {model_name} - {item.company_name}"
+                update_summary_tables(item, 'delete')
                 item.delete()
                 
                 # Log the action
@@ -154,6 +164,9 @@ def edit_inventory(request, model_name, item_id):
     
     if request.method == 'POST':
         try:
+            # Before updating, subtract old values
+            update_summary_tables(item, 'delete')
+            
             # Update common fields
             item.company_name = request.POST.get('company_name')
             item.price_per_kg = Decimal(request.POST.get('price_per_kg'))
@@ -184,6 +197,9 @@ def edit_inventory(request, model_name, item_id):
                 item.total_qty = int(request.POST.get('total_qty'))
 
             item.save()  # This will trigger the save method to recalculate totals
+            
+            # After updating, add new values
+            update_summary_tables(item, 'add')
             
             # Log the action
             details = f"Modified {model_name} - {item.company_name}"
@@ -245,3 +261,171 @@ def log_inventory_action(item_type, item_id, action, details):
         action=action,
         details=details
     )
+
+def update_summary_tables(instance, action='add'):
+    """Update summary tables when transactions occur"""
+    
+    if isinstance(instance, PaperReel):
+        summary, created = PaperReelSummary.objects.get_or_create(
+            gsm=instance.gsm,
+            bf=instance.bf,
+            size=instance.size,
+            defaults={
+                'total_weight': Decimal('0.00'),
+                'total_rolls': 0,
+                'avg_price_per_kg': Decimal('0.00')
+            }
+        )
+        
+        if action == 'add':
+            summary.total_weight = Decimal(str(summary.total_weight)) + Decimal(str(instance.total_weight))
+            summary.total_rolls = int(summary.total_rolls) + 1
+        elif action == 'delete':
+            if summary.total_rolls > 0 and Decimal(str(summary.total_weight)) >= Decimal(str(instance.total_weight)):
+                summary.total_weight = Decimal(str(summary.total_weight)) - Decimal(str(instance.total_weight))
+                summary.total_rolls = int(summary.total_rolls) - 1
+            else:
+                summary.total_weight = Decimal('0.00')
+                summary.total_rolls = 0
+        
+        if summary.total_weight > 0:
+            total_items = PaperReel.objects.filter(
+                gsm=instance.gsm,
+                bf=instance.bf,
+                size=instance.size
+            )
+            avg_price = total_items.aggregate(Avg('price_per_kg'))['price_per_kg__avg']
+            summary.avg_price_per_kg = Decimal(str(avg_price)) if avg_price else Decimal('0.00')
+        else:
+            summary.avg_price_per_kg = Decimal('0.00')
+        
+        summary.save()
+
+    elif isinstance(instance, PastingGum):
+        summary, created = PastingGumSummary.objects.get_or_create(
+            gum_type=instance.gum_type,
+            weight_per_bag=instance.weight_per_bag,
+            defaults={
+                'total_bags': 0,
+                'total_weight': 0,
+                'avg_price_per_kg': 0
+            }
+        )
+        
+        if action == 'add':
+            summary.total_bags = int(summary.total_bags) + int(instance.total_qty)
+            summary.total_weight = float(summary.total_weight) + (float(instance.total_qty) * float(instance.weight_per_bag))
+        elif action == 'delete':
+            if summary.total_bags >= int(instance.total_qty):
+                summary.total_bags = int(summary.total_bags) - int(instance.total_qty)
+                summary.total_weight = float(summary.total_weight) - (float(instance.total_qty) * float(instance.weight_per_bag))
+            else:
+                summary.total_bags = 0
+                summary.total_weight = 0
+        
+        if summary.total_bags > 0:
+            total_items = PastingGum.objects.filter(
+                gum_type=instance.gum_type,
+                weight_per_bag=instance.weight_per_bag
+            )
+            avg_price = total_items.aggregate(Avg('price_per_kg'))['price_per_kg__avg']
+            summary.avg_price_per_kg = float(avg_price) if avg_price else 0
+        else:
+            summary.avg_price_per_kg = 0
+        
+        summary.save()
+
+    elif isinstance(instance, Ink):
+        summary, created = InkSummary.objects.get_or_create(
+            color=instance.color,
+            weight_per_can=instance.weight_per_can,
+            defaults={
+                'total_cans': 0,
+                'total_weight': 0,
+                'avg_price_per_kg': 0
+            }
+        )
+        
+        if action == 'add':
+            summary.total_cans = int(summary.total_cans) + int(instance.total_qty)
+            summary.total_weight = float(summary.total_weight) + (float(instance.total_qty) * float(instance.weight_per_can))
+        elif action == 'delete':
+            if summary.total_cans >= int(instance.total_qty):
+                summary.total_cans = int(summary.total_cans) - int(instance.total_qty)
+                summary.total_weight = float(summary.total_weight) - (float(instance.total_qty) * float(instance.weight_per_can))
+            else:
+                summary.total_cans = 0
+                summary.total_weight = 0
+        
+        if summary.total_weight > 0:
+            total_items = Ink.objects.filter(
+                color=instance.color,
+                weight_per_can=instance.weight_per_can
+            )
+            avg_price = total_items.aggregate(Avg('price_per_kg'))['price_per_kg__avg']
+            summary.avg_price_per_kg = float(avg_price) if avg_price else 0
+        else:
+            summary.avg_price_per_kg = 0
+        
+        summary.save()
+
+    elif isinstance(instance, StrappingRoll):
+        summary, created = StrappingRollSummary.objects.get_or_create(
+            roll_type=instance.roll_type,
+            meters_per_roll=instance.meters_per_roll,
+            weight_per_roll=instance.weight_per_roll,
+            defaults={
+                'total_rolls': 0,
+                'total_meters': 0,
+                'avg_price_per_roll': 0
+            }
+        )
+        
+        if action == 'add':
+            summary.total_rolls = int(summary.total_rolls) + int(instance.total_qty)
+            summary.total_meters = int(summary.total_meters) + (int(instance.total_qty) * int(instance.meters_per_roll))
+        elif action == 'delete':
+            if summary.total_rolls >= int(instance.total_qty):
+                summary.total_rolls = int(summary.total_rolls) - int(instance.total_qty)
+                summary.total_meters = int(summary.total_meters) - (int(instance.total_qty) * int(instance.meters_per_roll))
+            else:
+                summary.total_rolls = 0
+                summary.total_meters = 0
+        
+        if summary.total_rolls > 0:
+            total_items = StrappingRoll.objects.filter(
+                roll_type=instance.roll_type,
+                meters_per_roll=instance.meters_per_roll
+            )
+            avg_price = total_items.aggregate(Avg('price_per_kg'))['price_per_kg__avg']
+            summary.avg_price_per_roll = float(avg_price) * float(instance.weight_per_roll) if avg_price else 0
+        else:
+            summary.avg_price_per_roll = 0
+        
+        summary.save()
+
+    elif isinstance(instance, PinCoil):
+        summary, created = PinCoilSummary.objects.get_or_create(
+            coil_type=instance.coil_type,
+            defaults={
+                'total_quantity': 0,
+                'avg_price_per_unit': 0
+            }
+        )
+        
+        if action == 'add':
+            summary.total_quantity = int(summary.total_quantity) + int(instance.total_qty)
+        elif action == 'delete':
+            if summary.total_quantity >= int(instance.total_qty):
+                summary.total_quantity = int(summary.total_quantity) - int(instance.total_qty)
+            else:
+                summary.total_quantity = 0
+        
+        if summary.total_quantity > 0:
+            total_items = PinCoil.objects.filter(coil_type=instance.coil_type)
+            avg_price = total_items.aggregate(Avg('price_per_kg'))['price_per_kg__avg']
+            summary.avg_price_per_unit = float(avg_price) if avg_price else 0
+        else:
+            summary.avg_price_per_unit = 0
+        
+        summary.save()

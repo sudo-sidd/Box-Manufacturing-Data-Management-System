@@ -1,0 +1,279 @@
+{% load static %}
+<div class="row g-4">
+    <!-- Paper Reels Transactions -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-box"></i> Paper Reels Transactions</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('paper-reels-transactions')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="paper-reels-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>GSM</th>
+                                <th>BF</th>
+                                <th>Size</th>
+                                <th>Weight</th>
+                                <th>Price/Kg</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in paper_reels %}
+                            <tr data-id="{{ item.id }}">
+                                <td>{{ item.timestamp|date:"d-m-Y" }}</td>
+                                <td>{{ item.company_name }}</td>
+                                <td>{{ item.gsm }}</td>
+                                <td>{{ item.bf }}</td>
+                                <td>{{ item.size }}</td>
+                                <td>{{ item.total_weight|floatformat:2 }} kg</td>
+                                <td>₹{{ item.price_per_kg|floatformat:2 }}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editItem('paper_reels', {{ item.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteItem('paper_reels', {{ item.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pasting Gum Transactions -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-bucket"></i> Pasting Gum Transactions</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('pasting-gum-transactions')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="pasting-gum-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>Gum Type</th>
+                                <th>Weight/Bag</th>
+                                <th>Quantity</th>
+                                <th>Price/Kg</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pasting_gum %}
+                            <tr data-id="{{ item.id }}">
+                                <td>{{ item.timestamp|date:"d-m-Y" }}</td>
+                                <td>{{ item.company_name }}</td>
+                                <td>{{ item.gum_type }}</td>
+                                <td>{{ item.weight_per_bag|floatformat:2 }} kg</td>
+                                <td>{{ item.total_qty }}</td>
+                                <td>₹{{ item.price_per_kg|floatformat:2 }}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editItem('pasting_gum', {{ item.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteItem('pasting_gum', {{ item.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ink Transactions -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-palette"></i> Ink Transactions</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('ink-transactions')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="ink-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>Color</th>
+                                <th>Weight/Can</th>
+                                <th>Quantity</th>
+                                <th>Price/Kg</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ink_stock %}
+                            <tr data-id="{{ item.id }}">
+                                <td>{{ item.timestamp|date:"d-m-Y" }}</td>
+                                <td>{{ item.company_name }}</td>
+                                <td>{{ item.color }}</td>
+                                <td>{{ item.weight_per_can|floatformat:2 }} kg</td>
+                                <td>{{ item.total_qty }}</td>
+                                <td>₹{{ item.price_per_kg|floatformat:2 }}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editItem('ink_stock', {{ item.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteItem('ink_stock', {{ item.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strapping Roll Transactions -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-disc"></i> Strapping Roll Transactions</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('strapping-roll-transactions')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="strapping-roll-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>Roll Type</th>
+                                <th>Meters/Roll</th>
+                                <th>Weight/Roll</th>
+                                <th>Quantity</th>
+                                <th>Price/Kg</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in strapping_rolls %}
+                            <tr data-id="{{ item.id }}">
+                                <td>{{ item.timestamp|date:"d-m-Y" }}</td>
+                                <td>{{ item.company_name }}</td>
+                                <td>{{ item.roll_type }}</td>
+                                <td>{{ item.meters_per_roll }} m</td>
+                                <td>{{ item.weight_per_roll|floatformat:2 }} kg</td>
+                                <td>{{ item.total_qty }}</td>
+                                <td>₹{{ item.price_per_kg|floatformat:2 }}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editItem('strapping_rolls', {{ item.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteItem('strapping_rolls', {{ item.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pin Coil Transactions -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-pin"></i> Pin Coil Transactions</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('pin-coil-transactions')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="pin-coil-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Company</th>
+                                <th>Coil Type</th>
+                                <th>Quantity</th>
+                                <th>Price/Unit</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pin_coils %}
+                            <tr data-id="{{ item.id }}">
+                                <td>{{ item.timestamp|date:"d-m-Y" }}</td>
+                                <td>{{ item.company_name }}</td>
+                                <td>{{ item.coil_type }}</td>
+                                <td>{{ item.total_qty }}</td>
+                                <td>₹{{ item.price_per_kg|floatformat:2 }}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editItem('pin_coils', {{ item.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteItem('pin_coils', {{ item.id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

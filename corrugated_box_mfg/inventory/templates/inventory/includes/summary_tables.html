@@ -1,0 +1,264 @@
+
+{% load static %}
+
+<!-- Paper Reels Summary -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-box"></i> Paper Reels Summary</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('paper-reels-summary')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="paper-reels-summary">
+                        <thead class="table-light">
+                            <tr>
+                                <th>GSM</th>
+                                <th>BF</th>
+                                <th>Size</th>
+                                <th>Total Weight</th>
+                                <th>Total Rolls</th>
+                                <th>Avg Price/Kg</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in paper_reels %}
+                            <tr>
+                                <td>{{ item.gsm }}</td>
+                                <td>{{ item.bf }}</td>
+                                <td>{{ item.size }}</td>
+                                <td>{{ item.total_weight|floatformat:2 }} kg</td>
+                                <td>{{ item.total_rolls }}</td>
+                                <td>₹{{ item.avg_price_per_kg|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.total_weight < item.min_stock_alert %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                    {% elif item.total_weight > item.max_stock_alert %}
+                                    <span class="badge bg-warning">Excess Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No paper reels in stock</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pasting Gum Summary -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-bucket"></i> Pasting Gum Summary</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('gum-summary')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="gum-summary">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Gum Type</th>
+                                <th>Weight/Bag</th>
+                                <th>Total Bags</th>
+                                <th>Total Weight</th>
+                                <th>Avg Price/Kg</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pasting_gum %}
+                            <tr>
+                                <td>{{ item.gum_type }}</td>
+                                <td>{{ item.weight_per_bag|floatformat:2 }} kg</td>
+                                <td>{{ item.total_bags }}</td>
+                                <td>{{ item.total_weight|floatformat:2 }} kg</td>
+                                <td>₹{{ item.avg_price_per_kg|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.total_bags < item.min_stock_alert %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                    {% elif item.total_bags > item.max_stock_alert %}
+                                    <span class="badge bg-warning">Excess Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No gum in stock</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ink Summary -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-palette"></i> Ink Summary</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('ink-summary')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="ink-summary">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Color</th>
+                                <th>Weight/Can</th>
+                                <th>Total Cans</th>
+                                <th>Total Weight</th>
+                                <th>Avg Price/Kg</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ink_stock %}
+                            <tr>
+                                <td>{{ item.color }}</td>
+                                <td>{{ item.weight_per_can|floatformat:2 }} kg</td>
+                                <td>{{ item.total_cans }}</td>
+                                <td>{{ item.total_weight|floatformat:2 }} kg</td>
+                                <td>₹{{ item.avg_price_per_kg|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.total_cans < item.min_stock_alert %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                    {% elif item.total_cans > item.max_stock_alert %}
+                                    <span class="badge bg-warning">Excess Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No ink in stock</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strapping Roll Summary -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-disc"></i> Strapping Roll Summary</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('strapping-summary')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="strapping-summary">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Roll Type</th>
+                                <th>Meters/Roll</th>
+                                <th>Weight/Roll</th>
+                                <th>Total Rolls</th>
+                                <th>Total Meters</th>
+                                <th>Avg Price/Roll</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in strapping_rolls %}
+                            <tr>
+                                <td>{{ item.roll_type }}</td>
+                                <td>{{ item.meters_per_roll }} m</td>
+                                <td>{{ item.weight_per_roll|floatformat:2 }} kg</td>
+                                <td>{{ item.total_rolls }}</td>
+                                <td>{{ item.total_meters }} m</td>
+                                <td>₹{{ item.avg_price_per_roll|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.total_rolls < item.min_stock_alert %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                    {% elif item.total_rolls > item.max_stock_alert %}
+                                    <span class="badge bg-warning">Excess Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No strapping rolls in stock</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pin Coil Summary -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0"><i class="bi bi-pin"></i> Pin Coil Summary</h3>
+                <button class="btn btn-sm btn-light" onclick="exportTable('pincoil-summary')">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="pincoil-summary">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Coil Type</th>
+                                <th>Total Quantity</th>
+                                <th>Avg Price/Unit</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pin_coils %}
+                            <tr>
+                                <td>{{ item.coil_type }}</td>
+                                <td>{{ item.total_quantity }}</td>
+                                <td>₹{{ item.avg_price_per_unit|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.total_quantity < item.min_stock_alert %}
+                                    <span class="badge bg-danger">Low Stock</span>
+                                    {% elif item.total_quantity > item.max_stock_alert %}
+                                    <span class="badge bg-warning">Excess Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No pin coils in stock</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
