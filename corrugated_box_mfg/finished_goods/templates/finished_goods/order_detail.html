@@ -1,0 +1,114 @@
+{% extends 'finished_goods/base_finished_goods.html' %}
+
+{% block finished_goods_content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4>Order #{{ order.order_number }}</h4>
+            <span class="badge bg-{{ order.get_status_color }}">{{ order.get_status_display }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Order Details</h5>
+                <table class="table">
+                    <tr>
+                        <th>Customer Name:</th>
+                        <td>{{ order.customer_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Order Date:</th>
+                        <td>{{ order.created_at|date:"d M Y" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Delivery Date:</th>
+                        <td>{{ order.delivery_date|date:"d M Y" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Quantity:</th>
+                        <td>{{ order.quantity }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>Box Specification</h5>
+                <table class="table">
+                    <tr>
+                        <th>Box Name:</th>
+                        <td>{{ order.box_template.box_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Dimensions:</th>
+                        <td>{{ order.box_template.length }} × {{ order.box_template.breadth }} × {{ order.box_template.height }}</td>
+                    </tr>
+                    <tr>
+                        <th>Ply Type:</th>
+                        <td>{{ order.box_template.num_plies }} Ply</td>
+                    </tr>
+                    <tr>
+                        <th>Print Color:</th>
+                        <td>{{ order.box_template.print_color }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        {% if material_requirements %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Material Requirements</h5>
+                <table class="table">
+                    <tr>
+                        <th>Material</th>
+                        <th>Required Quantity</th>
+                        <th>Cost</th>
+                    </tr>
+                    <tr>
+                        <td>Top Paper</td>
+                        <td>{{ material_requirements.top_paper_weight }} kg</td>
+                        <td>₹{{ material_requirements.paper_cost }}</td>
+                    </tr>
+                    <tr>
+                        <td>Gum</td>
+                        <td>-</td>
+                        <td>₹{{ material_requirements.gum_cost }}</td>
+                    </tr>
+                    <tr>
+                        <td>Ink</td>
+                        <td>-</td>
+                        <td>₹{{ material_requirements.ink_cost }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if manufacturing_cost %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Cost Breakdown</h5>
+                <table class="table">
+                    <tr>
+                        <th>Material Cost:</th>
+                        <td>₹{{ manufacturing_cost.material_cost }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Manufacturing Cost:</th>
+                        <td>₹{{ manufacturing_cost.total_cost }}</td>
+                    </tr>
+                    <tr>
+                        <th>Profit Margin:</th>
+                        <td>{{ manufacturing_cost.profit_margin }}%</td>
+                    </tr>
+                    <tr>
+                        <th>Suggested Price:</th>
+                        <td>₹{{ manufacturing_cost.suggested_price }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

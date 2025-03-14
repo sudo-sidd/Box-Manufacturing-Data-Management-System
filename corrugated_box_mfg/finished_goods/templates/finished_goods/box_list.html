@@ -1,12 +1,10 @@
-{% extends 'base.html' %}
+{% extends 'finished_goods/base_finished_goods.html' %}
 
-{% block title %}Box List{% endblock %}
-
-{% block content %}
+{% block finished_goods_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Box Specifications</h1>
+    <h1>Box Templates</h1>
     <a href="{% url 'finished_goods:box-create' %}" class="btn btn-primary">
-        Add New Box
+        <i class="bi bi-plus-lg"></i> Add New Template
     </a>
 </div>
 

@@ -1,5 +1,5 @@
 from django import forms
-from .models import BoxDetails, BoxPaperRequirements
+from .models import BoxDetails, BoxPaperRequirements, BoxOrder, ManufacturingCost
 
 class BoxDetailsForm(forms.ModelForm):
     class Meta:
@@ -48,3 +48,23 @@ class BoxPaperRequirementsForm(forms.ModelForm):
                 field.widget = forms.HiddenInput()
             else:
                 field.widget.attrs.update({'class': 'form-control'})
+
+class BoxOrderForm(forms.ModelForm):
+    profit_margin = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text="Enter profit margin percentage"
+    )
+
+    class Meta:
+        model = BoxOrder
+        fields = ['box_template', 'customer_name', 'quantity', 'delivery_date', 'notes']
+        widgets = {
+            'delivery_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})

@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.views.generic import CreateView, UpdateView, DetailView, ListView
 from django.urls import reverse_lazy
-from .models import BoxDetails, BoxPaperRequirements
-from .forms import BoxDetailsForm, BoxPaperRequirementsForm
+from .models import BoxDetails, BoxPaperRequirements, BoxOrder, MaterialRequirement, ManufacturingCost
+from .forms import BoxDetailsForm, BoxPaperRequirementsForm, BoxOrderForm
 from django.http import JsonResponse
 from django.db.models import Q
 
@@ -100,3 +100,58 @@ def get_box_calculations(request, pk):
         },
         'ups': box.ups,
     })
+
+class BoxOrderCreateView(CreateView):
+    model = BoxOrder
+    form_class = BoxOrderForm
+    template_name = 'finished_goods/order_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'template_id' in self.request.GET:
+            context['selected_template'] = BoxTemplate.objects.get(
+                id=self.request.GET['template_id']
+            )
+        return context
+
+def calculate_order_requirements(request):
+    template_id = request.GET.get('template_id')
+    quantity = request.GET.get('quantity', 0)
+    
+    if not template_id or not quantity:
+        return JsonResponse({'error': 'Missing parameters'})
+    
+    template = BoxTemplate.objects.get(id=template_id)
+    
+    # Calculate material requirements
+    requirements = MaterialRequirement.calculate_for_template(template, int(quantity))
+    
+    # Check inventory status
+    inventory_status = check_inventory_status(requirements)
+    
+    # Calculate manufacturing costs
+    costs = calculate_manufacturing_costs(requirements)
+    
+    return JsonResponse({
+        'requirements': requirements,
+        'inventory_status': inventory_status,
+        'manufacturing_costs': costs
+    })
+
+class BoxOrderListView(ListView):
+    model = BoxOrder
+    template_name = 'finished_goods/order_list.html'
+    context_object_name = 'orders'
+    ordering = ['-created_at']
+
+class BoxOrderDetailView(DetailView):
+    model = BoxOrder
+    template_name = 'finished_goods/order_detail.html'
+    context_object_name = 'order'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        order = self.get_object()
+        context['material_requirements'] = MaterialRequirement.objects.filter(box_order=order).first()
+        context['manufacturing_cost'] = ManufacturingCost.objects.filter(box_order=order).first()
+        return context

@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.urls import reverse
 
 class BoxSpecification(models.Model):
     FLUTE_CHOICES = [
@@ -156,3 +157,107 @@ class BoxPaperRequirements(models.Model):
             })
         
         return weights
+
+class BoxTemplate(models.Model):
+    FLUTE_CHOICES = [
+        ('A', 'A Flute'),
+        ('B', 'B Flute'),
+        ('C', 'C Flute'),
+    ]
+    PLY_CHOICES = [
+        (3, '3 Ply'),
+        (5, '5 Ply'),
+        (7, '7 Ply'),
+    ]
+
+    box_name = models.CharField(max_length=100, unique=True)
+    length = models.DecimalField(max_digits=10, decimal_places=2)
+    breadth = models.DecimalField(max_digits=10, decimal_places=2)
+    height = models.DecimalField(max_digits=10, decimal_places=2)
+    flute_type = models.CharField(max_length=1, choices=FLUTE_CHOICES)
+    num_plies = models.IntegerField(choices=PLY_CHOICES)
+    print_color = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.box_name} ({self.length}×{self.breadth}×{self.height})"
+
+    def get_absolute_url(self):
+        return reverse('finished_goods:template-detail', kwargs={'pk': self.pk})
+
+class BoxOrder(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('in_production', 'In Production'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled')
+    ]
+
+    box_template = models.ForeignKey(BoxTemplate, on_delete=models.PROTECT)
+    order_number = models.CharField(max_length=50, unique=True)
+    customer_name = models.CharField(max_length=100)
+    quantity = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    delivery_date = models.DateField()
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Order #{self.order_number} - {self.customer_name}"
+
+class MaterialRequirement(models.Model):
+    box_order = models.OneToOneField(BoxOrder, on_delete=models.CASCADE)
+    
+    # Paper requirements
+    top_paper_weight = models.DecimalField(max_digits=10, decimal_places=2)
+    bottom_paper_weight = models.DecimalField(max_digits=10, decimal_places=2)
+    flute_paper_weight = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    middle_paper_weight = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    
+    # Material costs
+    paper_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    gum_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    ink_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    calculated_at = models.DateTimeField(auto_now=True)
+
+    def calculate_material_costs(self):
+        # This will be implemented to calculate costs based on current inventory prices
+        pass
+
+class ManufacturingCost(models.Model):
+    box_order = models.OneToOneField(BoxOrder, on_delete=models.CASCADE)
+    
+    # Base material costs
+    material_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Manufacturing overhead (for future expansion)
+    machine_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    labor_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    overhead_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Pricing
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    profit_margin = models.DecimalField(max_digits=5, decimal_places=2)  # in percentage
+    suggested_price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def calculate_total_cost(self):
+        self.total_cost = (
+            self.material_cost +
+            self.machine_cost +
+            self.labor_cost +
+            self.overhead_cost
+        )
+        return self.total_cost
+
+    def calculate_suggested_price(self):
+        total = self.calculate_total_cost()
+        self.suggested_price = total * (1 + (self.profit_margin / 100))
+        return self.suggested_price

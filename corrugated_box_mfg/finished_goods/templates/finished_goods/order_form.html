@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Create New Order</h2>
+    
+    <!-- Section 1: Box Specification -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>1. Box Specification</h4>
+        </div>
+        <div class="card-body">
+            {% if selected_template %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Selected Template: {{ selected_template.box_name }}</h5>
+                        <p>Dimensions: {{ selected_template.length }}×{{ selected_template.breadth }}×{{ selected_template.height }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-primary" id="changeTemplate">
+                            Change Template
+                        </button>
+                    </div>
+                </div>
+            {% else %}
+                <div class="template-selector">
+                    <!-- Template selection will be loaded here -->
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section 2: Material Requirements -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>2. Material Requirements & Inventory Status</h4>
+        </div>
+        <div class="card-body">
+            <div id="materialRequirements">
+                <!-- Will be populated via AJAX -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Order Details & Costing -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>3. Order Details & Cost Calculation</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="orderForm">
+                {% csrf_token %}
+                {{ form.as_div }}
+                
+                <div id="costingSummary" class="mt-4">
+                    <h5>Manufacturing Cost Breakdown</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table">
+                                <tr>
+                                    <td>Material Cost:</td>
+                                    <td id="materialCost">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Manufacturing Cost:</td>
+                                    <td id="totalCost">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Suggested Price (with margin):</td>
+                                    <td id="suggestedPrice">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary" id="createOrder">
+                        Create Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCalculations() {
+    const templateId = document.getElementById('id_box_template').value;
+    const quantity = document.getElementById('id_quantity').value;
+    const margin = document.getElementById('id_profit_margin').value;
+
+    if (!templateId || !quantity) return;
+
+    fetch(`/finished-goods/calculate-requirements/?template_id=${templateId}&quantity=${quantity}&margin=${margin}`)
+        .then(response => response.json())
+        .then(data => {
+            updateMaterialRequirements(data.requirements);
+            updateInventoryStatus(data.inventory_status);
+            updateCostingSummary(data.manufacturing_costs);
+        });
+}
+
+// Add event listeners and other helper functions
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('orderForm');
+    ['quantity', 'profit_margin'].forEach(field => {
+        document.getElementById(`id_${field}`).addEventListener('change', updateCalculations);
+    });
+});
+</script>
+{% endblock %}

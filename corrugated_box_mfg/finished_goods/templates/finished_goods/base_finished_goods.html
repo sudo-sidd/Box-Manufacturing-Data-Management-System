@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'box-list' %}active{% endif %}" 
+                           href="{% url 'finished_goods:box-list' %}">
+                            <i class="bi bi-box"></i>
+                            Box Templates
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'order-create' %}active{% endif %}" 
+                           href="{% url 'finished_goods:order-create' %}">
+                            <i class="bi bi-plus-circle"></i>
+                            Create Order
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'order-list' %}active{% endif %}" 
+                           href="{% url 'finished_goods:order-list' %}">
+                            <i class="bi bi-list-ul"></i>
+                            View Orders
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            {% block finished_goods_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sidebar {
+    min-height: calc(100vh - 56px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.sidebar .nav-link {
+    color: #333;
+    padding: 0.5rem 1rem;
+    margin: 0.2rem 0;
+    border-radius: 0.25rem;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef;
+}
+
+.sidebar .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.sidebar .bi {
+    margin-right: 0.5rem;
+}
+</style>
+{% endblock %}
