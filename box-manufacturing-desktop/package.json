@@ -1,0 +1,37 @@
+{
+  "name": "box-manufacturing-desktop",
+  "version": "1.0.0",
+  "description": "Box Manufacturing Desktop Application",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "postinstall": "cd corrugated_box_mfg && python -m venv venv && ./venv/bin/pip install -r requirements.txt"
+  },
+  "build": {
+    "appId": "com.boxmanufacturing.app",
+    "mac": {
+      "category": "public.app-category.business"
+    },
+    "files": [
+      "src/**/*",
+      "corrugated_box_mfg/**/*",
+      "!corrugated_box_mfg/venv/**/*",
+      "!corrugated_box_mfg/**/__pycache__/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "corrugated_box_mfg",
+        "to": "corrugated_box_mfg",
+        "filter": ["**/*"]
+      }
+    ]
+  },
+  "dependencies": {
+    "electron": "^35.0.1",
+    "python-shell": "^5.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^25.1.8"
+  }
+}

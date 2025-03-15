@@ -1,0 +1,8 @@
+node_modules/
+corrugated_box_mfg/box_mfg/__pycache__
+corrugated_box_mfg/finished_goods/__pycache__
+corrugated_box_mfg/finished_goods/migrations/__pycache__
+corrugated_box_mfg/inventory/__pycache__
+corrugated_box_mfg/inventory/migrations/__pycache__
+corrugated_box_mfg/inventory/models/__pycache__
+corrugated_box_mfg/venv
