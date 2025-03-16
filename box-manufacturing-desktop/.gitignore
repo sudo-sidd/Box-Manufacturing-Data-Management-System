@@ -6,3 +6,7 @@ corrugated_box_mfg/inventory/__pycache__
 corrugated_box_mfg/inventory/migrations/__pycache__
 corrugated_box_mfg/inventory/models/__pycache__
 corrugated_box_mfg/venv
+dist/
+build/
+corrugated_box_mfg/dist
+corrugated_box_mfg/build

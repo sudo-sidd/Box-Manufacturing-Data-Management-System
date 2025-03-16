@@ -1,156 +1,208 @@
-const { app, BrowserWindow, dialog } = require('electron')
-const path = require('path')
-const { PythonShell } = require('python-shell')
-const fs = require('fs')
+const { app, BrowserWindow, dialog } = require('electron');
+const path = require('path');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
-let mainWindow
-let djangoServer
-let serverReady = false
+let mainWindow;
+let loadingWindow;
+let djangoProcess;
+let serverReady = false;
 
-function findPythonPath() {
-    const venvPath = path.join(__dirname, '../corrugated_box_mfg/venv')
-    const possiblePaths = [
-        path.join(venvPath, 'bin', 'python'),
-        path.join(venvPath, 'Scripts', 'python.exe'),
-        '/home/drackko/.pyenv/versions/3.13.1/bin/python'
-    ]
+const isDev = process.env.NODE_ENV === 'development';
 
-    for (const pythonPath of possiblePaths) {
-        if (fs.existsSync(pythonPath)) {
-            console.log('Found Python at:', pythonPath)
-            return pythonPath
-        }
-    }
-
-    throw new Error('Python executable not found')
-}
-
-function startDjangoServer() {
-    console.log('Starting Django server...')
-    
+function createLoadingWindow() {
     try {
-        const pythonPath = findPythonPath()
-        const options = {
-            mode: 'text',
-            pythonPath: pythonPath,
-            pythonOptions: ['-u'],
-            scriptPath: path.join(__dirname, '../corrugated_box_mfg'),
-            args: ['runserver', '127.0.0.1:8000'],
-            env: {
-                ...process.env,
-                PYTHONUNBUFFERED: '1',
-                DJANGO_SETTINGS_MODULE: 'box_mfg.settings'
+        loadingWindow = new BrowserWindow({
+            width: 400,
+            height: 300,
+            frame: false,
+            center: true, // Center the loading window
+            webPreferences: {
+                nodeIntegration: true
             }
-        }
-
-        console.log('Python path:', options.pythonPath)
-        console.log('Script path:', options.scriptPath)
-
-        djangoServer = new PythonShell('manage.py', options)
-
-        djangoServer.on('message', function (message) {
-            console.log('Django server message:', message)
-            // Update condition to match actual Django output
-            if (message.includes('Watching for file changes with StatReloader')) {
-                console.log('Django server is ready')
-                serverReady = true
-            }
-        })
-
-        djangoServer.on('stderr', function (stderr) {
-            console.error('Django server error:', stderr)
-            // Consider stderr messages as potential startup indicators
-            if (stderr.includes('Watching for file changes with StatReloader')) {
-                console.log('Django server is ready (from stderr)')
-                serverReady = true
-            }
-        })
-
-        djangoServer.on('error', function (err) {
-            console.error('Failed to start Django server:', err)
-            dialog.showErrorBox(
-                'Server Error',
-                `Failed to start Django server: ${err.message}`
-            )
-        })
-
-        djangoServer.on('close', function (code, signal) {
-            console.log('Django server closed with code:', code)
-            if (code !== 0) {
-                dialog.showErrorBox(
-                    'Server Closed',
-                    `Django server closed unexpectedly with code ${code}`
-                )
-            }
-        })
-
+        });
+        loadingWindow.loadFile(path.join(__dirname, 'loading.html'));
+        
+        loadingWindow.on('closed', () => {
+            loadingWindow = null;
+        });
     } catch (error) {
-        console.error('Error starting Django server:', error)
-        dialog.showErrorBox(
-            'Startup Error',
-            `Failed to start Django server: ${error.message}`
-        )
+        console.error('Error creating loading window:', error);
     }
 }
 
-function createWindow() {
+function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        show: false,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
-        },
-        show: false
-    })
-
-    mainWindow.loadFile(path.join(__dirname, 'loading.html'))
-    mainWindow.show()
-
-    // Add timeout for server startup
-    let startupTimeout = setTimeout(() => {
-        if (!serverReady) {
-            dialog.showErrorBox(
-                'Server Timeout',
-                'Django server failed to start within expected time'
-            )
         }
-    }, 10000)
+    });
 
-    const checkServer = setInterval(() => {
+    // Check if server is ready before loading URL
+    const checkServerAndLoad = () => {
         if (serverReady) {
-            clearInterval(checkServer)
-            clearTimeout(startupTimeout)
-            mainWindow.loadURL('http://127.0.0.1:8000')
+            mainWindow.loadURL('http://127.0.0.1:8000');
+            mainWindow.show();
+            if (loadingWindow) {
+                loadingWindow.close();
+            }
+        } else {
+            setTimeout(checkServerAndLoad, 1000);
         }
-    }, 1000)
+    };
+
+    checkServerAndLoad();
 
     mainWindow.on('closed', function () {
-        mainWindow = null
-    })
+        mainWindow = null;
+    });
+}
+
+function startDjangoServer() {
+    console.log('Starting Django server...');
+    
+    try {
+        // Improved path resolution with debug logging
+        const projectRoot = path.join(__dirname, '..');
+        console.log('Project root:', projectRoot);
+        
+        const djangoPath = isDev
+            ? path.join(projectRoot, 'corrugated_box_mfg', 'dist', 'django_app')
+            : path.join(process.resourcesPath, 'django_app');
+
+        const executablePath = process.platform === 'win32' 
+            ? `${djangoPath}.exe` 
+            : djangoPath;
+
+        console.log('Django path:', djangoPath);
+        console.log('Executable path:', executablePath);
+        console.log('Path exists:', fs.existsSync(executablePath));
+        
+        // Check if file exists
+        if (!fs.existsSync(executablePath)) {
+            // List directory contents for debugging
+            const dir = path.dirname(executablePath);
+            if (fs.existsSync(dir)) {
+                console.log('Directory contents:', fs.readdirSync(dir));
+            } else {
+                console.log('Directory does not exist:', dir);
+            }
+            throw new Error(`Django executable not found at: ${executablePath}`);
+        }
+
+        // Make file executable on Unix systems
+        if (process.platform !== 'win32') {
+            fs.chmodSync(executablePath, '755');
+        }
+
+        // Spawn process with more verbose logging
+        console.log('Spawning Django process...');
+        djangoProcess = spawn(executablePath, [], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { 
+                ...process.env, 
+                PYTHONUNBUFFERED: '1',
+                NODE_ENV: isDev ? 'development' : 'production'
+            }
+        });
+
+        console.log('Process started with PID:', djangoProcess.pid);
+
+        // Track server startup stages
+        let migrationsComplete = false;
+        let staticFilesCollected = false;
+
+        djangoProcess.stdout.on('data', (data) => {
+            const message = data.toString();
+            console.log('Django stdout:', message);
+            
+            // Track migration completion
+            if (message.includes('No migrations to apply.')) {
+                migrationsComplete = true;
+                console.log('Migrations completed');
+            }
+            
+            // Track static files collection
+            if (message.includes('static files copied')) {
+                staticFilesCollected = true;
+                console.log('Static files collected');
+            }
+
+            // Final server ready check
+            if (migrationsComplete && staticFilesCollected) {
+                console.log('All prerequisites complete, marking server as ready');
+                serverReady = true;
+            }
+        });
+
+        djangoProcess.stderr.on('data', (data) => {
+            const message = data.toString();
+            console.log('Django stderr:', message);
+        });
+
+        // Set timeout to prevent infinite loading
+        setTimeout(() => {
+            if (!serverReady) {
+                console.error('Server startup timeout');
+                dialog.showErrorBox(
+                    'Startup Error',
+                    'Django server failed to start within timeout period'
+                );
+                app.quit();
+            }
+        }, 30000);
+
+    } catch (error) {
+        console.error('Error starting Django server:', error);
+        console.error('Stack trace:', error.stack);
+        dialog.showErrorBox(
+            'Startup Error',
+            `Failed to start Django server: ${error.message}`
+        );
+    }
+}
+
+function cleanup() {
+    if (loadingWindow) {
+        loadingWindow.close();
+        loadingWindow = null;
+    }
+    if (djangoProcess) {
+        djangoProcess.kill('SIGTERM');
+    }
 }
 
 app.on('ready', () => {
-    startDjangoServer()
-    createWindow()
-})
+    createLoadingWindow();
+    startDjangoServer();
+    createMainWindow();
+});
 
 app.on('window-all-closed', function () {
+    cleanup();
     if (process.platform !== 'darwin') {
-        app.quit()
+        app.quit();
     }
-})
+});
 
 app.on('activate', function () {
     if (mainWindow === null) {
-        createWindow()
+        createMainWindow();
     }
-})
+});
 
 app.on('will-quit', () => {
-    if (djangoServer) {
-        djangoServer.end((err, code, signal) => {
-            if (err) console.log('Error shutting down Django server:', err)
-        })
+    if (djangoProcess) {
+        djangoProcess.kill('SIGTERM');
+        
+        setTimeout(() => {
+            if (djangoProcess) {
+                djangoProcess.kill('SIGKILL');
+            }
+        }, 5000);
     }
-})
+});
