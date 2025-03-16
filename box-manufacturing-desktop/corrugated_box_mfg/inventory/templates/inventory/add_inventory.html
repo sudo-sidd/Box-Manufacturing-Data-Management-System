@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Add Inventory - Box Manufacturing{% endblock %}
 
@@ -112,6 +113,65 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/suggestions.css' %}">
+<style>
+    .suggestions-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border: 1px solid #ddd;
+        border-radius: 0 0 4px 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background-color 0.2s ease;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestion-item:hover, .suggestion-item.active {
+        background-color: #f0f7ff;
+    }
+    
+    .suggestion-item.active {
+        font-weight: 500;
+    }
+    
+    /* Make sure form field containers have relative positioning */
+    .mb-3 {
+        position: relative;
+    }
+    
+    /* Add a small indicator for fields with suggestions */
+    .has-suggestions {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 16px;
+        padding-right: 30px !important;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -277,6 +337,183 @@ function addCalculationListeners() {
     });
 }
 
+// Maintain a cache of suggestions to reduce server requests
+const suggestionsCache = {};
+
+function setupAutoSuggest(inputElement) {
+    const field = inputElement.name;
+    const modelType = document.getElementById('item_type').value;
+    
+    // Create suggestions list container if it doesn't exist
+    let suggestionsList = inputElement.parentNode.querySelector('.suggestions-list');
+    if (!suggestionsList) {
+        suggestionsList = document.createElement('ul');
+        suggestionsList.className = 'suggestions-list';
+        suggestionsList.style.display = 'none';
+        inputElement.parentNode.style.position = 'relative'; // Ensure parent has position for absolute positioning
+        inputElement.parentNode.appendChild(suggestionsList);
+    }
+
+    // Define a function to fetch suggestions
+    const fetchSuggestions = function(query) {
+        // Create a cache key
+        const cacheKey = `${modelType}-${field}-${query}`;
+        
+        // Check if we have cached results
+        if (suggestionsCache[cacheKey]) {
+            console.log('Using cached suggestions');
+            return Promise.resolve(suggestionsCache[cacheKey]);
+        }
+        
+        // Encode URI components to handle special characters
+        const encodedField = encodeURIComponent(field);
+        const encodedModelType = encodeURIComponent(modelType);
+        const encodedQuery = encodeURIComponent(query);
+        
+        return fetch(`/inventory/suggestions/?field=${encodedField}&model_type=${encodedModelType}&query=${encodedQuery}`)
+            .then(response => response.json())
+            .then(data => {
+                // Cache the results
+                suggestionsCache[cacheKey] = data;
+                return data;
+            });
+    };
+
+    // Setup debounce for input
+    let debounceTimeout;
+    
+    // Add input event listener
+    inputElement.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(debounceTimeout);
+        
+        if (query.length < 1 || !modelType) {
+            suggestionsList.style.display = 'none';
+            return;
+        }
+
+        // Set a new timeout to delay the fetch
+        debounceTimeout = setTimeout(() => {
+            fetchSuggestions(query)
+                .then(data => {
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        // Clear previous suggestions
+                        suggestionsList.innerHTML = '';
+                        
+                        // Add new suggestions
+                        data.suggestions.forEach(suggestion => {
+                            const li = document.createElement('li');
+                            li.className = 'suggestion-item';
+                            li.textContent = suggestion;
+                            li.addEventListener('click', function() {
+                                inputElement.value = suggestion;
+                                suggestionsList.style.display = 'none';
+                                // Trigger input event to recalculate totals if needed
+                                inputElement.dispatchEvent(new Event('input'));
+                                // Give focus back to the input field
+                                inputElement.focus();
+                            });
+                            suggestionsList.appendChild(li);
+                        });
+                        
+                        suggestionsList.style.display = 'block';
+                    } else {
+                        suggestionsList.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching suggestions:', error);
+                    suggestionsList.style.display = 'none';
+                });
+        }, 300); // 300ms debounce
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== inputElement && !suggestionsList.contains(e.target)) {
+            suggestionsList.style.display = 'none';
+        }
+    });
+
+    // Handle keyboard navigation
+    inputElement.addEventListener('keydown', function(e) {
+        if (suggestionsList.style.display === 'none') return;
+        
+        const items = suggestionsList.querySelectorAll('.suggestion-item');
+        if (!items.length) return;
+        
+        let activeIndex = Array.from(items).findIndex(item => item.classList.contains('active'));
+        
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (activeIndex < 0 || activeIndex >= items.length - 1) {
+                    activeIndex = 0;
+                } else {
+                    activeIndex++;
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (activeIndex <= 0) {
+                    activeIndex = items.length - 1;
+                } else {
+                    activeIndex--;
+                }
+                break;
+            case 'Enter':
+                if (activeIndex >= 0) {
+                    e.preventDefault();
+                    items[activeIndex].click();
+                    return;
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                suggestionsList.style.display = 'none';
+                return;
+            default:
+                return;
+        }
+        
+        // Update active item
+        items.forEach(item => item.classList.remove('active'));
+        if (activeIndex >= 0) {
+            items[activeIndex].classList.add('active');
+            // Scroll to make sure the active item is visible
+            items[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+    });
+}
+
+// Setup suggestions for appropriate fields based on item type
+function setupSuggestions() {
+    const itemType = document.getElementById('item_type').value;
+    if (!itemType) return;
+    
+    // Map of which fields should have suggestions for each item type
+    const suggestFields = {
+        'Paper Reel': ['gsm', 'bf', 'size', 'company_name'],
+        'Pasting Gum': ['gum_type', 'weight_per_bag', 'company_name'],
+        'Ink': ['color', 'weight_per_can', 'company_name'],
+        'Strapping Roll': ['roll_type', 'meters_per_roll', 'weight_per_roll', 'company_name'],
+        'Pin Coil': ['coil_type', 'company_name']
+    };
+    
+    // Apply autosuggest to appropriate fields for the selected item type
+    if (suggestFields[itemType]) {
+        suggestFields[itemType].forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (field) {
+                setupAutoSuggest(field);
+            }
+        });
+    }
+}
+
+// Modified showItemForm function
 function showItemForm() {
     const itemType = document.getElementById('item_type').value;
     const dynamicFormFields = document.getElementById('dynamicFormFields');
@@ -285,7 +522,12 @@ function showItemForm() {
     if (itemType) {
         dynamicFormFields.innerHTML = formTemplates[itemType] || '';
         commonFields.style.display = 'block';
-        addCalculationListeners(); // Add listeners after form is populated
+        
+        // Set up calculation listeners
+        addCalculationListeners();
+        
+        // Set up suggestions after form is rendered
+        setTimeout(setupSuggestions, 100);
     } else {
         dynamicFormFields.innerHTML = '';
         commonFields.style.display = 'none';

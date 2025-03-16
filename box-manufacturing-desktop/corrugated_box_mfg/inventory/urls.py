@@ -9,4 +9,5 @@ urlpatterns = [
     path("get-presets/", get_presets, name="get_presets"),
     path('delete/<str:model_name>/<int:item_id>/', views.delete_inventory, name='delete_inventory'),
     path('edit/<str:model_name>/<int:item_id>/', views.edit_inventory, name='edit_inventory'),
+    path('suggestions/', views.get_field_suggestions, name='field-suggestions'),
 ]

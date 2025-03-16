@@ -1,22 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
-from django.db.models import Sum, Avg
+from django.db.models import Sum, Avg, Q
 from .models import (
     # Transaction Models
     PaperReel, PastingGum, Ink, StrappingRoll, PinCoil,
     # Summary Models
-    PaperReelSummary, PastingGumSummary, InkSummary, 
+    PaperReelSummary, PastingGumSummary, InkSummary,
     StrappingRollSummary, PinCoilSummary,
     # Other Models
     Preset, InventoryLog
 )
 from decimal import Decimal
 
-
 def inventory_overview(request):
     view_type = request.GET.get('view', 'summary')
-    
     context = {
         'view_type': view_type,
         'paper_reels': PaperReelSummary.objects.all() if view_type == 'summary' else PaperReel.objects.all().order_by('-timestamp'),
@@ -26,7 +24,6 @@ def inventory_overview(request):
         'pin_coils': PinCoilSummary.objects.all() if view_type == 'summary' else PinCoil.objects.all().order_by('-timestamp'),
         'activity_logs': InventoryLog.objects.all()[:50]
     }
-    
     return render(request, 'inventory/inventory_overview.html', context)
 
 def get_summary_context():
@@ -52,7 +49,6 @@ def get_transaction_context():
 def inventory_home(request):
     return render(request, "inventory/home.html")
 
-
 def save_preset(category, value):
     """ Save a unique preset value if it doesn't exist """
     if value and not Preset.objects.filter(category=category, value=value).exists():
@@ -76,7 +72,7 @@ def add_inventory(request):
                 "extra_charges": float(request.POST.get("extra_charges", 0)),
                 "tax_percent": float(request.POST.get("tax_percent", 0)),
             }
-
+            # Create item based on type
             if item_type == "Paper Reel":
                 item = PaperReel.objects.create(
                     gsm=int(request.POST.get("gsm")),
@@ -85,23 +81,48 @@ def add_inventory(request):
                     total_weight=float(request.POST.get("total_weight")),
                     **common_data
                 )
-
-            # ... rest of your item type conditions ...
+            elif item_type == "Pasting Gum":
+                item = PastingGum.objects.create(
+                    gum_type=request.POST.get("gum_type"),
+                    weight_per_bag=float(request.POST.get("weight_per_bag")),
+                    total_qty=int(request.POST.get("total_qty")),
+                    **common_data
+                )
+            elif item_type == "Ink":
+                item = Ink.objects.create(
+                    color=request.POST.get("color"),
+                    weight_per_can=float(request.POST.get("weight_per_can")),
+                    total_qty=int(request.POST.get("total_qty")),
+                    **common_data
+                )
+            elif item_type == "Strapping Roll":
+                item = StrappingRoll.objects.create(
+                    roll_type=request.POST.get("roll_type"),
+                    meters_per_roll=int(request.POST.get("meters_per_roll")),
+                    weight_per_roll=float(request.POST.get("weight_per_roll")),
+                    total_qty=int(request.POST.get("total_qty")),
+                    **common_data
+                )
+            elif item_type == "Pin Coil":
+                item = PinCoil.objects.create(
+                    coil_type=request.POST.get("coil_type"),
+                    total_qty=int(request.POST.get("total_qty")),
+                    **common_data
+                )
+            else:
+                raise ValueError(f"Invalid item type: {item_type}")
 
             # Log the action
             details = f"Added {item_type} from {common_data['company_name']}"
             log_inventory_action(item_type, item.id, 'ADD', details)
-            
+
             # Update summary tables
             update_summary_tables(item, action='add')
-            
             messages.success(request, f"{item_type} added successfully!")
             return redirect("inventory_overview")
-            
         except Exception as e:
             messages.error(request, f"Error adding inventory: {str(e)}")
             return redirect("add_inventory")
-            
     return render(request, "inventory/add_inventory.html")
 
 def get_presets(request):
@@ -118,7 +139,6 @@ def delete_inventory(request, model_name, item_id):
         'strapping_roll': StrappingRoll,
         'pin_coils': PinCoil
     }
-    
     if request.method == 'POST':
         try:
             model = model_map.get(model_name)
@@ -127,10 +147,8 @@ def delete_inventory(request, model_name, item_id):
                 details = f"Deleted {model_name} - {item.company_name}"
                 update_summary_tables(item, 'delete')
                 item.delete()
-                
                 # Log the action
                 log_inventory_action(model_name, item_id, 'DELETE', details)
-                
                 return JsonResponse({
                     'status': 'success',
                     'message': f'{model_name.replace("_", " ").title()} deleted successfully'
@@ -155,25 +173,20 @@ def edit_inventory(request, model_name, item_id):
         'strapping_rolls': StrappingRoll,
         'pin_coils': PinCoil
     }
-    
     model = model_map.get(model_name)
     if not model:
         return JsonResponse({'status': 'error', 'message': 'Invalid model name'})
-        
     item = get_object_or_404(model, id=item_id)
-    
     if request.method == 'POST':
         try:
             # Before updating, subtract old values
             update_summary_tables(item, 'delete')
-            
             # Update common fields
             item.company_name = request.POST.get('company_name')
             item.price_per_kg = Decimal(request.POST.get('price_per_kg'))
             item.freight = Decimal(request.POST.get('freight'))
             item.extra_charges = Decimal(request.POST.get('extra_charges'))
             item.tax_percent = Decimal(request.POST.get('tax_percent'))
-
             # Update model-specific fields
             if model_name == 'paper_reels':
                 item.gsm = int(request.POST.get('gsm'))
@@ -195,21 +208,15 @@ def edit_inventory(request, model_name, item_id):
                 item.meters_per_roll = int(request.POST.get('meters_per_roll'))
                 item.weight_per_roll = Decimal(request.POST.get('weight_per_roll'))
                 item.total_qty = int(request.POST.get('total_qty'))
-
             item.save()  # This will trigger the save method to recalculate totals
-            
             # After updating, add new values
             update_summary_tables(item, 'add')
-            
             # Log the action
             details = f"Modified {model_name} - {item.company_name}"
             log_inventory_action(model_name, item_id, 'EDIT', details)
-            
             return JsonResponse({'status': 'success'})
-            
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
-    
     # GET request - return current data
     data = {
         'company_name': item.company_name,
@@ -218,7 +225,6 @@ def edit_inventory(request, model_name, item_id):
         'extra_charges': str(item.extra_charges),
         'tax_percent': str(item.tax_percent),
     }
-    
     # Add model-specific fields
     if model_name == 'paper_reels':
         data.update({
@@ -251,7 +257,6 @@ def edit_inventory(request, model_name, item_id):
             'coil_type': item.coil_type,
             'total_qty': item.total_qty
         })
-    
     return JsonResponse({'status': 'success', 'data': data})
 
 def log_inventory_action(item_type, item_id, action, details):
@@ -264,7 +269,6 @@ def log_inventory_action(item_type, item_id, action, details):
 
 def update_summary_tables(instance, action='add'):
     """Update summary tables when transactions occur"""
-    
     if isinstance(instance, PaperReel):
         summary, created = PaperReelSummary.objects.get_or_create(
             gsm=instance.gsm,
@@ -429,3 +433,84 @@ def update_summary_tables(instance, action='add'):
             summary.avg_price_per_unit = 0
         
         summary.save()
+
+def get_field_suggestions(request):
+    """
+    Get suggestions for form fields based on existing data in the database.
+    This provides autocomplete functionality for inventory form fields.
+    """
+    field = request.GET.get('field')
+    model_type = request.GET.get('model_type')
+    query = request.GET.get('query', '').strip()
+    
+    print(f"Looking for suggestions: field={field}, model_type={model_type}, query={query}")
+    
+    # Map URL parameters to model classes
+    model_map = {
+        'Paper Reel': PaperReel,
+        'Pasting Gum': PastingGum,
+        'Ink': Ink,
+        'Strapping Roll': StrappingRoll,
+        'Pin Coil': PinCoil
+    }
+    
+    if not field or not model_type or query == '':
+        return JsonResponse({'suggestions': []})
+    
+    model = model_map.get(model_type)
+    if not model:
+        return JsonResponse({'suggestions': []})
+    
+    # Get unique values for the requested field
+    try:
+        # For numeric fields like gsm, handle them differently
+        if field == 'gsm':
+            # For numeric fields, we want exact matches at the beginning
+            queryset = model.objects.filter(
+                **{f"{field}__startswith": query}
+            ).values_list(field, flat=True).distinct().order_by(field)[:10]
+        else:
+            # For text fields, use case-insensitive contains
+            queryset = model.objects.filter(
+                **{f"{field}__icontains": query}
+            ).values_list(field, flat=True).distinct().order_by(field)[:10]
+        
+        # Convert all values to strings for consistent output
+        suggestions = [str(value) for value in queryset]
+        
+        print(f"Found {len(suggestions)} suggestions for {field}: {suggestions}")
+        return JsonResponse({'suggestions': suggestions})
+    except Exception as e:
+        print(f"Error getting suggestions: {str(e)}")
+        return JsonResponse({'suggestions': [], 'error': str(e)})     # Debug log
+    field = request.GET.get('field')
+    model_type = request.GET.get('model_type')
+    query = request.GET.get('query', '')
+    
+    print(f"Searching for: field={field}, model_type={model_type}, query={query}")  # Debug log
+    
+    model_map = {
+        'Paper Reel': PaperReel,
+        'Pasting Gum': PastingGum,
+        'Ink': Ink,
+        'Strapping Roll': StrappingRoll,
+        'Pin Coil': PinCoil
+    }
+    
+    if not field or not query or not model_type:
+        return JsonResponse({'suggestions': []})
+    
+    model = model_map.get(model_type)
+    if not model:
+        return JsonResponse({'suggestions': []})
+    
+    # Get unique values for the requested field
+    # Use icontains for case-insensitive matching
+    queryset = model.objects.filter(
+        **{f"{field}__icontains": query}
+    ).values_list(field, flat=True).distinct().order_by(field)[:10]
+    
+    suggestions = list(queryset)
+    print(f"Found suggestions: {suggestions}")  # Debug log
+    
+    return JsonResponse({'suggestions': suggestions})

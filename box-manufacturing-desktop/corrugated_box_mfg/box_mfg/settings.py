@@ -107,7 +107,16 @@ USE_TZ = True
 # Static files configuration
 STATIC_URL = 'static/'
 STATIC_ROOT = os.environ.get('STATIC_ROOT', BASE_DIR / 'static')
-STATICFILES_DIRS = [BASE_DIR / 'static'] if not getattr(sys, 'frozen', False) else []
+
+# Only add STATICFILES_DIRS in development mode and ensure it doesn't conflict with STATIC_ROOT
+if not getattr(sys, 'frozen', False):
+    STATICFILES_DIRS = [
+        BASE_DIR / 'inventory/static',
+        BASE_DIR / 'finished_goods/static',
+    ]
+else:
+    STATICFILES_DIRS = []
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files configuration
