@@ -45,7 +45,7 @@ function createMainWindow() {
     // Check if server is ready before loading URL
     const checkServerAndLoad = () => {
         if (serverReady) {
-            mainWindow.loadURL('http://127.0.0.1:8000');
+            mainWindow.loadURL('localhost:8000');
             mainWindow.show();
             if (loadingWindow) {
                 loadingWindow.close();

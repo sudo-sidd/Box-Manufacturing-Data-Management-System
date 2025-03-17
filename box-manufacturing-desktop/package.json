@@ -1,78 +1,13 @@
 {
   "name": "box-manufacturing-desktop",
   "version": "1.0.0",
-  "description": "Box Manufacturing Desktop Application",
-  "homepage": "http://localhost:8000",
-  "author": {
-    "name": "drackko",
-    "email": "theprosidd@gmail.com"
-  },
-  "main": "src/main.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "NODE_ENV=development electron .",
-    "build:django": "cd corrugated_box_mfg && pyinstaller django_app.spec --clean",
-    "build:electron": "electron-builder --linux",
-    "build:electron-win": "electron-builder --win",
-    "build": "npm run build:django && npm run build:electron",
-    "build:win": "npm run build:django && npm run build:electron-win",
-    "postinstall": "cd corrugated_box_mfg && python -m venv venv && ./venv/bin/pip install -r requirements.txt"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "build": {
-    "appId": "com.boxmanufacturing.app",
-    "productName": "box_manufacturing",
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Business",
-      "artifactName": "${productName}-${version}.${ext}"
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "build/icon.ico",
-      "artifactName": "${productName}-${version}.${ext}",
-      "requestedExecutionLevel": "requireAdministrator"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "box_manufacturing",
-      "uninstallDisplayName": "Box Manufacturing",
-      "artifactName": "box_manufacturing_setup.${ext}",
-      "deleteAppDataOnUninstall": true
-    },
-    "files": [
-      "src/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "corrugated_box_mfg/dist/django_app",
-        "to": "django_app",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "directories": {
-      "output": "dist",
-      "buildResources": "build"
-    }
-  },
-  "dependencies": {
-    "python-shell": "^5.0.0"
-  },
-  "devDependencies": {
-    "electron": "^24.3.0",
-    "electron-builder": "^24.6.0"
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
