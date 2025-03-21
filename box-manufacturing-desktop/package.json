@@ -3,55 +3,49 @@
   "version": "1.0.0",
   "description": "Box Manufacturing Desktop Application with Django Backend",
   "main": "src/main.js",
+  "homepage": "https://boxmanufacturingapp.com",
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "electron . --dev",
     "build:django": "cd corrugated_box_mfg && pyinstaller django_app.spec",
-    "build:electron": "electron-builder",
+    "build:electron": "electron-builder --windows",
     "build": "npm run build:django && npm run build:electron",
     "postinstall": "electron-builder install-app-deps",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "pack": "electron-builder --dir --windows",
+    "dist": "electron-builder --windows"
   },
   "keywords": ["electron", "django", "manufacturing", "crm"],
-  "author": "",
+  "author": "Your Name <your.email@example.com>",
   "license": "ISC",
   "type": "commonjs",
   "build": {
     "appId": "com.boxmanufacturing.desktop",
-    "productName": "Box Manufacturing Desktop",
+    "productName": "Box_Manufacturing",
     "directories": {
       "output": "dist"
     },
     "files": [
       "src/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "preload.js"
     ],
     "extraResources": [
       {
-        "from": "corrugated_box_mfg/dist/django_app",
-        "to": "django_app",
-        "filter": ["!*.spec"]
-      },
-      {
-        "from": "corrugated_box_mfg/dist/django_app.exe",
-        "to": "django_app/django_app.exe",
-        "filter": ["!*.spec"]
+        "from": "corrugated_box_mfg/dist/",
+        "to": "django_app/"
       }
     ],
     "win": {
-      "target": ["nsis"],
-      "icon": "assets/icon.ico"
+      "target": ["portable", "nsis"],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
-    "linux": {
-      "target": ["AppImage", "deb"],
-      "icon": "assets/icon.png"
-    },
-    "mac": {
-      "target": ["dmg"],
-      "icon": "assets/icon.icns"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
     }
   },
   "devDependencies": {
