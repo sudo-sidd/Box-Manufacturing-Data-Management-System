@@ -2,13 +2,15 @@ const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const log = require('electron-log');
+const isDev = require('electron-is-dev');
 
 let mainWindow;
 let loadingWindow;
 let djangoProcess;
 let serverReady = false;
 
-const isDev = process.env.NODE_ENV === 'development';
+const djangoExeName = process.platform === 'win32' ? 'django_app.exe' : 'django_app';
 
 function createLoadingWindow() {
     try {
@@ -66,82 +68,24 @@ function startDjangoServer() {
     console.log('Starting Django server...');
     
     try {
-        // Improved path resolution with debug logging
-        const projectRoot = path.join(__dirname, '..');
-        console.log('Project root:', projectRoot);
-        
         const djangoPath = isDev
-            ? path.join(projectRoot, 'corrugated_box_mfg', 'dist', 'django_app')
-            : path.join(process.resourcesPath, 'django_app');
+            ? path.join(__dirname, '..', 'corrugated_box_mfg', djangoExeName)
+            : path.join(process.resourcesPath, 'django_app', djangoExeName);
 
-        const executablePath = process.platform === 'win32' 
-            ? `${djangoPath}.exe` 
-            : djangoPath;
-
-        console.log('Django path:', djangoPath);
-        console.log('Executable path:', executablePath);
-        console.log('Path exists:', fs.existsSync(executablePath));
+        log.info(`Starting Django server from: ${djangoPath}`);
         
-        // Check if file exists
-        if (!fs.existsSync(executablePath)) {
-            // List directory contents for debugging
-            const dir = path.dirname(executablePath);
-            if (fs.existsSync(dir)) {
-                console.log('Directory contents:', fs.readdirSync(dir));
-            } else {
-                console.log('Directory does not exist:', dir);
-            }
-            throw new Error(`Django executable not found at: ${executablePath}`);
-        }
-
-        // Make file executable on Unix systems
-        if (process.platform !== 'win32') {
-            fs.chmodSync(executablePath, '755');
-        }
-
-        // Spawn process with more verbose logging
-        console.log('Spawning Django process...');
-        djangoProcess = spawn(executablePath, [], {
-            stdio: ['ignore', 'pipe', 'pipe'],
-            env: { 
-                ...process.env, 
-                PYTHONUNBUFFERED: '1',
-                NODE_ENV: isDev ? 'development' : 'production'
-            }
-        });
-
-        console.log('Process started with PID:', djangoProcess.pid);
-
-        // Track server startup stages
-        let migrationsComplete = false;
-        let staticFilesCollected = false;
-
+        djangoProcess = spawn(djangoPath);
+        
         djangoProcess.stdout.on('data', (data) => {
-            const message = data.toString();
-            console.log('Django stdout:', message);
-            
-            // Track migration completion
-            if (message.includes('No migrations to apply.')) {
-                migrationsComplete = true;
-                console.log('Migrations completed');
-            }
-            
-            // Track static files collection
-            if (message.includes('static files copied')) {
-                staticFilesCollected = true;
-                console.log('Static files collected');
-            }
-
-            // Final server ready check
-            if (migrationsComplete && staticFilesCollected) {
-                console.log('All prerequisites complete, marking server as ready');
-                serverReady = true;
-            }
+            log.info(`Django: ${data}`);
         });
-
+        
         djangoProcess.stderr.on('data', (data) => {
-            const message = data.toString();
-            console.log('Django stderr:', message);
+            log.error(`Django Error: ${data}`);
+        });
+        
+        djangoProcess.on('close', (code) => {
+            log.info(`Django process exited with code ${code}`);
         });
 
         // Set timeout to prevent infinite loading
@@ -157,12 +101,7 @@ function startDjangoServer() {
         }, 30000);
 
     } catch (error) {
-        console.error('Error starting Django server:', error);
-        console.error('Stack trace:', error.stack);
-        dialog.showErrorBox(
-            'Startup Error',
-            `Failed to start Django server: ${error.message}`
-        );
+        log.error('Failed to start Django server:', error);
     }
 }
 

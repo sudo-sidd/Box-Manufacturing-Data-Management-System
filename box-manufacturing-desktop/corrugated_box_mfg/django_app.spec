@@ -11,7 +11,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'box_mfg.settings')
 block_cipher = None
 
 # Platform-specific settings
-is_windows = platform.system() == 'Windows'
+is_windows = True  # Force Windows output
 
 # Collect all necessary Django and app-specific imports
 hidden_imports = collect_submodules('django') + [
@@ -91,7 +91,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='django_app',
+    name='django_app.exe',  # Explicitly add .exe
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

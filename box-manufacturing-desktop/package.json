@@ -1,13 +1,65 @@
 {
   "name": "box-manufacturing-desktop",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Box Manufacturing Desktop Application with Django Backend",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "electron . --dev",
+    "build:django": "cd corrugated_box_mfg && pyinstaller django_app.spec",
+    "build:electron": "electron-builder",
+    "build": "npm run build:django && npm run build:electron",
+    "postinstall": "electron-builder install-app-deps",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
-  "keywords": [],
+  "keywords": ["electron", "django", "manufacturing", "crm"],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "build": {
+    "appId": "com.boxmanufacturing.desktop",
+    "productName": "Box Manufacturing Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "corrugated_box_mfg/dist/django_app",
+        "to": "django_app",
+        "filter": ["!*.spec"]
+      },
+      {
+        "from": "corrugated_box_mfg/dist/django_app.exe",
+        "to": "django_app/django_app.exe",
+        "filter": ["!*.spec"]
+      }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "assets/icon.icns"
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.3",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "electron-is-dev": "^2.0.0",
+    "electron-log": "^5.0.0"
+  }
 }
