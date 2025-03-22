@@ -1,194 +1,191 @@
-{% extends 'base.html' %}
+{% extends 'finished_goods/base_finished_goods.html' %}
 {% load static %}
 
 {% block extra_css %}
+{{ block.super }} <!-- This preserves the CSS from the parent template -->
 <link rel="stylesheet" href="{% static 'css/auto-suggest.css' %}">
 {% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>{{ object.id|yesno:"Edit,Create" }} Box Template</h5>
+{% block finished_goods_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ object.id|yesno:"Edit,Create" }} Box Template</h1>
+    <a href="{% url 'finished_goods:box-list' %}" class="btn btn-secondary">Back to List</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Box Dimensions</h6>
+                    <div class="form-group">
+                        <label for="{{ form.box_name.id_for_label }}">Box Name</label>
+                        {{ form.box_name }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.length.id_for_label }}">Length (cm)</label>
+                                {{ form.length }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.breadth.id_for_label }}">Breadth (cm)</label>
+                                {{ form.breadth }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.height.id_for_label }}">Height (cm)</label>
+                                {{ form.height }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.flute_type.id_for_label }}">Flute Type</label>
+                                {{ form.flute_type }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.num_plies.id_for_label }}">Number of Plies</label>
+                                {{ form.num_plies }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="{{ form.order_quantity.id_for_label }}">Order Quantity</label>
+                                {{ form.order_quantity }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.print_color.id_for_label }}">Print Color</label>
+                        {{ form.print_color }}
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
+                
+                <div class="col-md-6">
+                    <h6>Paper Requirements</h6>
+                    
+                    <!-- Base 3-ply fields (always show) -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ paper_form.top_paper_gsm.id_for_label }}">Top Paper GSM</label>
+                                {{ paper_form.top_paper_gsm }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ paper_form.top_paper_bf.id_for_label }}">Top Paper BF</label>
+                                {{ paper_form.top_paper_bf }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ paper_form.bottom_paper_gsm.id_for_label }}">Bottom Paper GSM</label>
+                                {{ paper_form.bottom_paper_gsm }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ paper_form.bottom_paper_bf.id_for_label }}">Bottom Paper BF</label>
+                                {{ paper_form.bottom_paper_bf }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 5-ply fields (show/hide based on selection) -->
+                    <div class="flute-paper-fields" style="display:none;">
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper_gsm.id_for_label }}">Flute Paper GSM</label>
+                                    {{ paper_form.flute_paper_gsm }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper_bf.id_for_label }}">Flute Paper BF</label>
+                                    {{ paper_form.flute_paper_bf }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 7-ply fields (show/hide based on selection) -->
+                    <div class="seven-ply-fields" style="display:none;">
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper1_gsm.id_for_label }}">Flute Paper 1 GSM</label>
+                                    {{ paper_form.flute_paper1_gsm }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper1_bf.id_for_label }}">Flute Paper 1 BF</label>
+                                    {{ paper_form.flute_paper1_bf }}
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <h6>Box Dimensions</h6>
                                 <div class="form-group">
-                                    <label for="{{ form.box_name.id_for_label }}">Box Name</label>
-                                    {{ form.box_name }}
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.length.id_for_label }}">Length (cm)</label>
-                                            {{ form.length }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.breadth.id_for_label }}">Breadth (cm)</label>
-                                            {{ form.breadth }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.height.id_for_label }}">Height (cm)</label>
-                                            {{ form.height }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.flute_type.id_for_label }}">Flute Type</label>
-                                            {{ form.flute_type }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.num_plies.id_for_label }}">Number of Plies</label>
-                                            {{ form.num_plies }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label for="{{ form.order_quantity.id_for_label }}">Order Quantity</label>
-                                            {{ form.order_quantity }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="{{ form.print_color.id_for_label }}">Print Color</label>
-                                    {{ form.print_color }}
+                                    <label for="{{ paper_form.middle_paper_gsm.id_for_label }}">Middle Paper GSM</label>
+                                    {{ paper_form.middle_paper_gsm }}
                                 </div>
                             </div>
-                            
                             <div class="col-md-6">
-                                <h6>Paper Requirements</h6>
-                                
-                                <!-- Base 3-ply fields (always show) -->
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ paper_form.top_paper_gsm.id_for_label }}">Top Paper GSM</label>
-                                            {{ paper_form.top_paper_gsm }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ paper_form.top_paper_bf.id_for_label }}">Top Paper BF</label>
-                                            {{ paper_form.top_paper_bf }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ paper_form.bottom_paper_gsm.id_for_label }}">Bottom Paper GSM</label>
-                                            {{ paper_form.bottom_paper_gsm }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="{{ paper_form.bottom_paper_bf.id_for_label }}">Bottom Paper BF</label>
-                                            {{ paper_form.bottom_paper_bf }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 5-ply fields (show/hide based on selection) -->
-                                <div class="flute-paper-fields" style="display:none;">
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper_gsm.id_for_label }}">Flute Paper GSM</label>
-                                                {{ paper_form.flute_paper_gsm }}
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper_bf.id_for_label }}">Flute Paper BF</label>
-                                                {{ paper_form.flute_paper_bf }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- 7-ply fields (show/hide based on selection) -->
-                                <div class="seven-ply-fields" style="display:none;">
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper1_gsm.id_for_label }}">Flute Paper 1 GSM</label>
-                                                {{ paper_form.flute_paper1_gsm }}
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper1_bf.id_for_label }}">Flute Paper 1 BF</label>
-                                                {{ paper_form.flute_paper1_bf }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.middle_paper_gsm.id_for_label }}">Middle Paper GSM</label>
-                                                {{ paper_form.middle_paper_gsm }}
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.middle_paper_bf.id_for_label }}">Middle Paper BF</label>
-                                                {{ paper_form.middle_paper_bf }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper2_gsm.id_for_label }}">Flute Paper 2 GSM</label>
-                                                {{ paper_form.flute_paper2_gsm }}
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label for="{{ paper_form.flute_paper2_bf.id_for_label }}">Flute Paper 2 BF</label>
-                                                {{ paper_form.flute_paper2_bf }}
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="{{ paper_form.middle_paper_bf.id_for_label }}">Middle Paper BF</label>
+                                    {{ paper_form.middle_paper_bf }}
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="form-group mt-3">
-                            <button type="button" id="calculate-btn" class="btn btn-info">Calculate</button>
-                            <button type="submit" class="btn btn-primary">Save Box Template</button>
-                            <a href="{% url 'finished_goods:box-list' %}" class="btn btn-secondary">Cancel</a>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper2_gsm.id_for_label }}">Flute Paper 2 GSM</label>
+                                    {{ paper_form.flute_paper2_gsm }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ paper_form.flute_paper2_bf.id_for_label }}">Flute Paper 2 BF</label>
+                                    {{ paper_form.flute_paper2_bf }}
+                                </div>
+                            </div>
                         </div>
-                    </form>
-                    
-                    <div id="calculation-results" class="mt-4">
-                        <!-- Results will be displayed here -->
                     </div>
                 </div>
             </div>
+            
+            <div class="form-group mt-3">
+                <button type="button" id="calculate-btn" class="btn btn-info">Calculate</button>
+                <button type="submit" class="btn btn-primary">Save Box Template</button>
+                <a href="{% url 'finished_goods:box-list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+        
+        <div id="calculation-results" class="mt-4">
+            <!-- Results will be displayed here -->
         </div>
     </div>
 </div>

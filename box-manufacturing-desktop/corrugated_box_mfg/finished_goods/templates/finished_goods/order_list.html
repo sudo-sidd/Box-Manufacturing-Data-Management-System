@@ -1,6 +1,8 @@
 {% extends 'finished_goods/base_finished_goods.html' %}
+{% load static %}
 
 {% block extra_css %}
+{{ block.super }} <!-- This preserves the CSS from the parent template -->
 <style>
 /* Fix for Select2 dropdown visibility */
 .select2-container--open .select2-dropdown {
@@ -15,17 +17,19 @@
 /* Increase body and card sizes */
 body {
     min-height: 100vh;
-    padding-bottom: 300px; /* Add extra space at the bottom of the page */
+    padding-bottom: 100px; /* Add extra space at the bottom of the page */
 }
 
 .card {
     transform: none !important;
     min-height: 60vh; /* Make card taller */
+    margin-bottom: 3rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
 /* Make the table area larger */
 .table-responsive {
-    min-height: 500px; /* Set minimum height */
+    min-height: 400px; /* Set minimum height */
     max-height: none !important; /* Remove max height restriction */
     overflow-y: visible !important; /* Allow content to flow outside */
 }

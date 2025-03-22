@@ -1,0 +1,33 @@
+/* Force Select2 to render properly */
+.select2-container {
+    z-index: 1000;
+    width: 100% !important;
+}
+
+.select2-container--open {
+    z-index: 9999 !important;
+}
+
+.select2-container--open .select2-dropdown {
+    position: absolute !important;
+    z-index: 99999 !important;
+    min-width: 250px !important;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    background-color: #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+}
+
+.select2-dropdown {
+    max-height: none !important;
+    overflow-y: visible !important;
+}
+
+.select2-results__options {
+    max-height: 350px !important;
+    overflow-y: auto !important;
+}
+
+.select2-search__field {
+    width: 100% !important;
+}

@@ -1,154 +1,152 @@
-{% extends 'base.html' %}
+{% extends 'finished_goods/base_finished_goods.html' %}
 
-{% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Order #{{ order.order_number }}</h1>
-        <div>
-            <a href="{% url 'finished_goods:order-list' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Orders
-            </a>
+{% block finished_goods_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Order #{{ order.order_number }}</h1>
+    <div>
+        <a href="{% url 'finished_goods:order-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Order Details</h5>
+            <span class="badge bg-{{ order.get_status_color }} fs-6">{{ order.get_status_display }}</span>
         </div>
     </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Order Details</h5>
-                <span class="badge bg-{{ order.get_status_color }} fs-6">{{ order.get_status_display }}</span>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Customer Information</h5>
+                <table class="table">
+                    <tr>
+                        <th>Customer:</th>
+                        <td>{{ order.customer_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Order Date:</th>
+                        <td>{{ order.created_at|date:"d M Y" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Quantity:</th>
+                        <td>{{ order.quantity }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>Box Specification</h5>
+                <table class="table">
+                    <tr>
+                        <th>Box Name:</th>
+                        <td>{{ order.box_template.box_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Dimensions:</th>
+                        <td>{{ order.box_template.length }} × {{ order.box_template.breadth }} × {{ order.box_template.height }} cm</td>
+                    </tr>
+                    <tr>
+                        <th>Ply Type:</th>
+                        <td>{{ order.box_template.num_plies }} Ply</td>
+                    </tr>
+                    <tr>
+                        <th>Print Color:</th>
+                        <td>{{ order.box_template.print_color }}</td>
+                    </tr>
+                </table>
             </div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Customer Information</h5>
-                    <table class="table">
-                        <tr>
-                            <th>Customer:</th>
-                            <td>{{ order.customer_name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Order Date:</th>
-                            <td>{{ order.created_at|date:"d M Y" }}</td>
-                        </tr>
-                        <tr>
-                            <th>Quantity:</th>
-                            <td>{{ order.quantity }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <h5>Box Specification</h5>
-                    <table class="table">
-                        <tr>
-                            <th>Box Name:</th>
-                            <td>{{ order.box_template.box_name }}</td>
-                        </tr>
-                        <tr>
-                            <th>Dimensions:</th>
-                            <td>{{ order.box_template.length }} × {{ order.box_template.breadth }} × {{ order.box_template.height }} cm</td>
-                        </tr>
-                        <tr>
-                            <th>Ply Type:</th>
-                            <td>{{ order.box_template.num_plies }} Ply</td>
-                        </tr>
-                        <tr>
-                            <th>Print Color:</th>
-                            <td>{{ order.box_template.print_color }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
 
-            {% if material_requirements %}
-            <div class="row mt-4">
-                <div class="col-12">
-                    <h5>Material Requirements</h5>
-                    <table class="table">
-                        <tr>
-                            <th>Material</th>
-                            <th>Required Quantity</th>
-                            <th>Cost</th>
-                        </tr>
-                        {% for material, details in material_requirements.items %}
-                        <tr>
-                            <td>{{ material }}</td>
-                            <td>{{ details.quantity }} {{ details.unit }}</td>
-                            <td>₹{{ details.cost|floatformat:2 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                </div>
+        {% if material_requirements %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Material Requirements</h5>
+                <table class="table">
+                    <tr>
+                        <th>Material</th>
+                        <th>Required Quantity</th>
+                        <th>Cost</th>
+                    </tr>
+                    {% for material, details in material_requirements.items %}
+                    <tr>
+                        <td>{{ material }}</td>
+                        <td>{{ details.quantity }} {{ details.unit }}</td>
+                        <td>₹{{ details.cost|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
             </div>
-            {% endif %}
+        </div>
+        {% endif %}
 
-            {% if manufacturing_cost %}
-            <div class="row mt-4">
-                <div class="col-12">
-                    <h5>Cost Breakdown</h5>
-                    <table class="table">
-                        <tr>
-                            <th>Material Cost:</th>
-                            <td>₹{{ manufacturing_cost.material_cost|floatformat:2 }}</td>
-                        </tr>
-                        <tr>
-                            <th>Labor Cost:</th>
-                            <td>₹{{ manufacturing_cost.labor_cost|floatformat:2 }}</td>
-                        </tr>
-                        <tr>
-                            <th>Total Manufacturing Cost:</th>
-                            <td>₹{{ manufacturing_cost.total_cost|floatformat:2 }}</td>
-                        </tr>
-                        <tr>
-                            <th>Profit Margin:</th>
-                            <td>{{ manufacturing_cost.profit_margin }}%</td>
-                        </tr>
-                        <tr>
-                            <th>Suggested Price:</th>
-                            <td>₹{{ manufacturing_cost.suggested_price|floatformat:2 }}</td>
-                        </tr>
-                        <tr>
-                            <th>Price Per Unit:</th>
-                            <td>₹{{ manufacturing_cost.unit_price|floatformat:2 }}</td>
-                        </tr>
-                    </table>
-                </div>
+        {% if manufacturing_cost %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Cost Breakdown</h5>
+                <table class="table">
+                    <tr>
+                        <th>Material Cost:</th>
+                        <td>₹{{ manufacturing_cost.material_cost|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Labor Cost:</th>
+                        <td>₹{{ manufacturing_cost.labor_cost|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Manufacturing Cost:</th>
+                        <td>₹{{ manufacturing_cost.total_cost|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Profit Margin:</th>
+                        <td>{{ manufacturing_cost.profit_margin }}%</td>
+                    </tr>
+                    <tr>
+                        <th>Suggested Price:</th>
+                        <td>₹{{ manufacturing_cost.suggested_price|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Price Per Unit:</th>
+                        <td>₹{{ manufacturing_cost.unit_price|floatformat:2 }}</td>
+                    </tr>
+                </table>
             </div>
-            {% endif %}
-            
-            <!-- Order Status Update -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <h5>Update Status</h5>
-                    <form id="status-update-form" class="d-flex align-items-center">
-                        {% csrf_token %}
-                        <select id="order-status" class="form-select me-2" style="max-width: 300px;">
-                            <option value="PLACED" {% if order.status == 'PLACED' %}selected{% endif %}>Order Placed</option>
-                            <option value="MANUFACTURING" {% if order.status == 'MANUFACTURING' %}selected{% endif %}>Manufacturing</option>
-                            <option value="PRODUCTION_COMPLETE" {% if order.status == 'PRODUCTION_COMPLETE' %}selected{% endif %}>Production Complete</option>
-                            <option value="SHIPPED" {% if order.status == 'SHIPPED' %}selected{% endif %}>Shipped</option>
-                            <option value="DELIVERED" {% if order.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
-                            <option value="COMPLETED" {% if order.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
-                        </select>
-                        <button type="submit" class="btn btn-primary">Update Status</button>
-                    </form>
-                </div>
+        </div>
+        {% endif %}
+        
+        <!-- Order Status Update -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Update Status</h5>
+                <form id="status-update-form" class="d-flex align-items-center">
+                    {% csrf_token %}
+                    <select id="order-status" class="form-select me-2" style="max-width: 300px;">
+                        <option value="PLACED" {% if order.status == 'PLACED' %}selected{% endif %}>Order Placed</option>
+                        <option value="MANUFACTURING" {% if order.status == 'MANUFACTURING' %}selected{% endif %}>Manufacturing</option>
+                        <option value="PRODUCTION_COMPLETE" {% if order.status == 'PRODUCTION_COMPLETE' %}selected{% endif %}>Production Complete</option>
+                        <option value="SHIPPED" {% if order.status == 'SHIPPED' %}selected{% endif %}>Shipped</option>
+                        <option value="DELIVERED" {% if order.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+                        <option value="COMPLETED" {% if order.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </form>
             </div>
-            
-            <!-- Notes Section -->
-            {% if order.notes %}
-            <div class="row mt-4">
-                <div class="col-12">
-                    <h5>Order Notes</h5>
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            {{ order.notes|linebreaks }}
-                        </div>
+        </div>
+        
+        <!-- Notes Section -->
+        {% if order.notes %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Order Notes</h5>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        {{ order.notes|linebreaks }}
                     </div>
                 </div>
             </div>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
