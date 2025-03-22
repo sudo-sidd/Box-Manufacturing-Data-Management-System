@@ -4,37 +4,46 @@ from .models import BoxDetails, BoxPaperRequirements, BoxOrder, ManufacturingCos
 class BoxDetailsForm(forms.ModelForm):
     class Meta:
         model = BoxDetails
-        fields = ['box_name', 'length', 'breadth', 'height', 'flute_type', 
-                 'num_plies', 'print_color', 'order_quantity']
-        
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['box_name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['length'].widget.attrs.update({'class': 'form-control'})
-        self.fields['breadth'].widget.attrs.update({'class': 'form-control'})
-        self.fields['height'].widget.attrs.update({'class': 'form-control'})
-        self.fields['flute_type'].widget.attrs.update({'class': 'form-control'})
-        self.fields['num_plies'].widget.attrs.update({
-            'class': 'form-control',
-            'onchange': 'updatePaperRequirements(this.value)'
-        })
-        self.fields['print_color'].widget.attrs.update({'class': 'form-control'})
-        self.fields['order_quantity'].widget.attrs.update({'class': 'form-control'})
+        fields = ['box_name', 'length', 'breadth', 'height', 'flute_type', 'num_plies', 'print_color', 'order_quantity']
+        widgets = {
+            'box_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'length': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'step': '0.01'}),
+            'breadth': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'step': '0.01'}),
+            'height': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'step': '0.01'}),
+            'flute_type': forms.Select(attrs={'class': 'form-control'}),
+            'num_plies': forms.Select(attrs={'class': 'form-control', 'id': 'id_num_plies'}),
+            'print_color': forms.TextInput(attrs={'class': 'form-control'}),
+            'order_quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        }
 
 class BoxPaperRequirementsForm(forms.ModelForm):
     class Meta:
         model = BoxPaperRequirements
         exclude = ['box']
-
-    def __init__(self, num_plies=3, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Always show 3 ply fields
-        required_fields = ['top_paper_gsm', 'top_paper_bf', 
-                         'bottom_paper_gsm', 'bottom_paper_bf']
         
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Basic required fields for all ply types
+        required_fields = [
+            'top_paper_gsm', 'top_paper_bf',
+            'bottom_paper_gsm', 'bottom_paper_bf'
+        ]
+        
+        # Get ply type from POST data or instance
+        num_plies = 3
+        if 'data' in kwargs and kwargs['data'].get('num_plies'):
+            num_plies = int(kwargs['data'].get('num_plies'))
+        elif kwargs.get('instance') and hasattr(kwargs['instance'], 'box'):
+            num_plies = kwargs['instance'].box.num_plies
+        
+        # Add fields for 5 ply
         if num_plies >= 5:
-            required_fields.extend(['flute_paper_gsm', 'flute_paper_bf'])
-            
+            required_fields.extend([
+                'flute_paper_gsm', 'flute_paper_bf'
+            ])
+        
+        # Add fields for 7 ply
         if num_plies == 7:
             required_fields.extend([
                 'flute_paper1_gsm', 'flute_paper1_bf',
@@ -50,18 +59,16 @@ class BoxPaperRequirementsForm(forms.ModelForm):
                 field.widget.attrs.update({'class': 'form-control'})
 
 class BoxOrderForm(forms.ModelForm):
-    profit_margin = forms.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        help_text="Enter profit margin percentage"
-    )
-
     class Meta:
         model = BoxOrder
-        fields = ['box_template', 'customer_name', 'quantity', 'delivery_date', 'notes']
+        fields = ['customer_name', 'box_template', 'quantity', 'profit_margin', 'status', 'notes']
         widgets = {
-            'delivery_date': forms.DateInput(attrs={'type': 'date'}),
-            'notes': forms.Textarea(attrs={'rows': 3}),
+            'customer_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'box_template': forms.Select(attrs={'class': 'form-control'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'profit_margin': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01', 'value': '15.00'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):

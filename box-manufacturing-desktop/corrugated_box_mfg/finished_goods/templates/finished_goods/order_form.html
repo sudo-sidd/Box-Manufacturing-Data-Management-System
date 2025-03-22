@@ -10,49 +10,155 @@
             <h4>1. Box Specification</h4>
         </div>
         <div class="card-body">
+            <div class="template-selector">
+                <form method="get" id="template-select-form">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="box_template" class="form-label">Select Box Template</label>
+                                <select class="form-select" id="box_template" name="template">
+                                    <option value="">-- Select a template --</option>
+                                    {% for template in box_templates %}
+                                    <option value="{{ template.id }}" {% if selected_template.id == template.id %}selected{% endif %}>
+                                        {{ template.box_name }} ({{ template.length }}×{{ template.breadth }}×{{ template.height }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="form-control btn btn-primary">
+                                    <i class="bi bi-arrow-repeat"></i> Load Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
             {% if selected_template %}
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5>Selected Template: {{ selected_template.box_name }}</h5>
-                        <p>Dimensions: {{ selected_template.length }}×{{ selected_template.breadth }}×{{ selected_template.height }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <button class="btn btn-outline-primary" id="changeTemplate">
-                            Change Template
-                        </button>
-                    </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5>Selected: {{ selected_template.box_name }}</h5>
+                    <p>Dimensions: {{ selected_template.length }}×{{ selected_template.breadth }}×{{ selected_template.height }} cm</p>
+                    <p>Flute Type: {{ selected_template.flute_type }}</p>
+                    <p>Plies: {{ selected_template.num_plies }}</p>
                 </div>
-            {% else %}
-                <div class="template-selector">
-                    <!-- Template selection will be loaded here -->
-                </div>
+            </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Section 2: Material Requirements -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>2. Material Requirements & Inventory Status</h4>
-        </div>
-        <div class="card-body">
-            <div id="materialRequirements">
-                <!-- Will be populated via AJAX -->
+    <!-- Section 2: Order Details & Material Requirements -->
+    <form method="post" id="orderForm">
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>2. Order Details</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_customer_name" class="form-label">Customer Name</label>
+                            {{ form.customer_name }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_box_template" class="form-label">Box Template</label>
+                            {{ form.box_template }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="id_quantity" class="form-label">Quantity</label>
+                            {{ form.quantity }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="id_profit_margin" class="form-label">Profit Margin (%)</label>
+                            {{ form.profit_margin }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="id_status" class="form-label">Initial Status</label>
+                            {{ form.status }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="id_notes" class="form-label">Order Notes</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Section 3: Order Details & Costing -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>3. Order Details & Cost Calculation</h4>
+        
+        <!-- Section 3: Material Requirements & Inventory Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>3. Material Requirements & Inventory Status</h4>
+            </div>
+            <div class="card-body">
+                <div id="materialRequirements" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Required Materials</h5>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Required Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="requiredMaterials">
+                                    <tr>
+                                        <td colspan="2" class="text-center">Select a template and quantity to see requirements</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Inventory Status</h5>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryStatus">
+                                    <tr>
+                                        <td colspan="2" class="text-center">Select a template and quantity to see inventory status</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="post" id="orderForm">
-                {% csrf_token %}
-                {{ form.as_div }}
-                
-                <div id="costingSummary" class="mt-4">
+
+        <!-- Section 4: Cost Calculation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>4. Cost Calculation</h4>
+            </div>
+            <div class="card-body">
+                <div id="costingSummary">
                     <h5>Manufacturing Cost Breakdown</h5>
                     <div class="row">
                         <div class="col-md-6">
@@ -62,12 +168,20 @@
                                     <td id="materialCost">-</td>
                                 </tr>
                                 <tr>
+                                    <td>Labor Cost:</td>
+                                    <td id="laborCost">-</td>
+                                </tr>
+                                <tr>
                                     <td>Total Manufacturing Cost:</td>
                                     <td id="totalCost">-</td>
                                 </tr>
                                 <tr>
                                     <td>Suggested Price (with margin):</td>
                                     <td id="suggestedPrice">-</td>
+                                </tr>
+                                <tr>
+                                    <td>Price Per Unit:</td>
+                                    <td id="unitPrice">-</td>
                                 </tr>
                             </table>
                         </div>
@@ -79,9 +193,9 @@
                         Create Order
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 {% endblock %}
 
@@ -100,15 +214,112 @@ function updateCalculations() {
             updateMaterialRequirements(data.requirements);
             updateInventoryStatus(data.inventory_status);
             updateCostingSummary(data.manufacturing_costs);
+        })
+        .catch(error => {
+            console.error('Error calculating requirements:', error);
         });
 }
 
-// Add event listeners and other helper functions
+function updateMaterialRequirements(requirements) {
+    const tbody = document.getElementById('requiredMaterials');
+    tbody.innerHTML = '';
+    
+    if (!requirements || requirements.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="2" class="text-center">No materials required</td>';
+        tbody.appendChild(row);
+        return;
+    }
+    
+    requirements.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.material_name}</td>
+            <td>${item.quantity} ${item.unit}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateInventoryStatus(inventoryStatus) {
+    const tbody = document.getElementById('inventoryStatus');
+    tbody.innerHTML = '';
+    
+    if (!inventoryStatus || Object.keys(inventoryStatus).length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="2" class="text-center">No inventory status available</td>';
+        tbody.appendChild(row);
+        return;
+    }
+    
+    Object.entries(inventoryStatus).forEach(([material, status]) => {
+        const row = document.createElement('tr');
+        let statusClass, statusText;
+        
+        switch(status) {
+            case 'adequate':
+                statusClass = 'bg-success text-white';
+                statusText = 'Adequate';
+                break;
+            case 'low':
+                statusClass = 'bg-warning';
+                statusText = 'Low Stock';
+                break;
+            case 'insufficient':
+                statusClass = 'bg-danger text-white';
+                statusText = 'Insufficient';
+                break;
+            default:
+                statusClass = '';
+                statusText = 'Unknown';
+        }
+        
+        row.innerHTML = `
+            <td>${material}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateCostingSummary(costs) {
+    if (!costs) return;
+    
+    document.getElementById('materialCost').textContent = '₹' + costs.material_cost.toFixed(2);
+    document.getElementById('laborCost').textContent = '₹' + costs.labor_cost.toFixed(2);
+    document.getElementById('totalCost').textContent = '₹' + costs.total_cost.toFixed(2);
+    document.getElementById('suggestedPrice').textContent = '₹' + costs.suggested_price.toFixed(2);
+    
+    const quantity = document.getElementById('id_quantity').value || 1;
+    const unitPrice = costs.suggested_price / quantity;
+    document.getElementById('unitPrice').textContent = '₹' + unitPrice.toFixed(2);
+}
+
+// Add event listeners to recalculate costs when values change
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('orderForm');
-    ['quantity', 'profit_margin'].forEach(field => {
-        document.getElementById(`id_${field}`).addEventListener('change', updateCalculations);
+    
+    // Set initial box template value if selected from previous screen
+    const selectedTemplate = document.getElementById('box_template')?.value;
+    if (selectedTemplate) {
+        const boxTemplateSelect = document.getElementById('id_box_template');
+        if (boxTemplateSelect) {
+            boxTemplateSelect.value = selectedTemplate;
+        }
+    }
+    
+    ['quantity', 'profit_margin', 'box_template'].forEach(field => {
+        const element = document.getElementById(`id_${field}`);
+        if (element) {
+            element.addEventListener('change', updateCalculations);
+        }
     });
+    
+    // Initial calculation if we have values
+    if (document.getElementById('id_box_template').value && 
+        document.getElementById('id_quantity').value) {
+        updateCalculations();
+    }
 });
 </script>
 {% endblock %}

@@ -37,10 +37,23 @@
                         </td>
                         <td>{{ order.created_at|date:"d M Y" }}</td>
                         <td>
-                            <a href="{% url 'finished_goods:order-detail' order.pk %}" 
-                               class="btn btn-sm btn-info">
-                                <i class="bi bi-eye"></i>
-                            </a>
+                            <div class="btn-group">
+                                <a href="{% url 'finished_goods:order-detail' order.pk %}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="PLACED">Order Placed</a></li>
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="MANUFACTURING">Manufacturing</a></li>
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="PRODUCTION_COMPLETE">Production Complete</a></li>
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="SHIPPED">Shipped</a></li>
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="DELIVERED">Delivered</a></li>
+                                    <li><a class="dropdown-item update-status" href="#" data-id="{{ order.id }}" data-status="COMPLETED">Completed</a></li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -53,4 +66,47 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for status update links
+    const statusLinks = document.querySelectorAll('.update-status');
+    statusLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const orderId = this.dataset.id;
+            const status = this.dataset.status;
+            
+            // Send update request
+            fetch(`/finished-goods/orders/${orderId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error updating order status: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the order status.');
+            });
+        });
+    });
+    
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+});
+</script>
 {% endblock %}
