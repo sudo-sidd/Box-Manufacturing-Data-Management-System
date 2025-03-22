@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.db.models import Q
 from django.views.decorators.http import require_POST
+from decimal import Decimal
 
 from .models import BoxDetails, BoxPaperRequirements, BoxOrder, MaterialRequirement, ManufacturingCost
 from .forms import BoxDetailsForm, BoxPaperRequirementsForm, BoxOrderForm
@@ -236,14 +237,24 @@ class BoxOrderCreateView(CreateView):
         }
     
     def calculate_costs(self, materials, profit_margin):
-        # This is placeholder logic - replace with your actual cost calculations
-        material_cost = (materials['top_paper_weight'] * 0.02) + \
-                       (materials['bottom_paper_weight'] * 0.015) + \
-                       (materials['ink_cost'] * 2)
+        # Convert materials values to Decimal if they aren't already
+        top_paper_weight = Decimal(str(materials['top_paper_weight']))
+        bottom_paper_weight = Decimal(str(materials['bottom_paper_weight']))
+        ink_cost = Decimal(str(materials['ink_cost']))
         
-        labor_cost = material_cost * 0.3  # Assume labor is 30% of material cost
+        # Use Decimal for all calculations
+        material_cost = (top_paper_weight * Decimal('0.02')) + \
+                       (bottom_paper_weight * Decimal('0.015')) + \
+                       (ink_cost * Decimal('2'))
+        
+        labor_cost = material_cost * Decimal('0.3')  # Assume labor is 30% of material cost
         total_cost = material_cost + labor_cost
-        suggested_price = total_cost * (1 + (profit_margin / 100))
+        
+        # Convert profit_margin to Decimal if it's not already
+        if not isinstance(profit_margin, Decimal):
+            profit_margin = Decimal(str(profit_margin))
+            
+        suggested_price = total_cost * (Decimal('1') + (profit_margin / Decimal('100')))
         
         return {
             'material_cost': material_cost,
