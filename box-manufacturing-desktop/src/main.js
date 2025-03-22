@@ -17,6 +17,7 @@ log.transports.console.level = 'info';
 const djangoExeName = process.platform === 'win32' ? 'django_app.exe' : 'django_app';
 
 function createMainWindow() {
+  log.info('Creating main window');
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -27,15 +28,37 @@ function createMainWindow() {
     show: true
   });
 
-  // Load the loading screen first
-  mainWindow.loadFile(path.join(__dirname, 'loading.html'));
+  // Check if loading.html exists
+  const loadingHtmlPath = path.join(__dirname, 'loading.html');
+  if (!fs.existsSync(loadingHtmlPath)) {
+    log.error(`Loading HTML file not found: ${loadingHtmlPath}`);
+    // Create a minimal loading HTML on the fly
+    const minimalHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Loading...</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding-top: 100px;">
+          <h1>Loading Box Manufacturing App...</h1>
+          <p>Please wait while the server is starting.</p>
+        </body>
+      </html>
+    `;
+    fs.writeFileSync(loadingHtmlPath, minimalHtml);
+    log.info(`Created minimal loading.html file`);
+  }
+
+  // Now load the file
+  mainWindow.loadFile(loadingHtmlPath);
 
   mainWindow.webContents.on('did-fail-load', (e, code, desc) => {
     log.error(`Failed to load: ${code} - ${desc}`);
+    // Try loading a simple HTML string as fallback
+    mainWindow.loadURL(`data:text/html,<html><body><h1>Loading...</h1></body></html>`);
   });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    mainWindow.focus();
   });
 
   mainWindow.on('closed', () => {
