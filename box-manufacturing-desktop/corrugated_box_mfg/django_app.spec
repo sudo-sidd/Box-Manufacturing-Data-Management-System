@@ -34,13 +34,20 @@ hidden_imports = collect_submodules('django') + [
     'finished_goods.urls',
     'finished_goods.views',
     'finished_goods.models',
+    'data_cleanup',                 
+    'data_cleanup.urls',            
+    'data_cleanup.views',           
+    'accounts',                     
+    'accounts.urls',                
+    'accounts.views',               
     'whitenoise.middleware',
     'rest_framework',
     'rest_framework.views',
     'rest_framework.response',
     'rest_framework.parsers',
-    'django.utils.autoreload'  # Add this
+    'django.utils.autoreload'
 ] + \
+
 collect_submodules('whitenoise') + \
 collect_submodules('rest_framework')
 
@@ -54,6 +61,8 @@ datas = [
     (os.path.join(SPECPATH, 'templates'), 'templates'),
     (os.path.join(SPECPATH, 'inventory/templates'), 'inventory/templates'),
     (os.path.join(SPECPATH, 'finished_goods/templates'), 'finished_goods/templates'),
+    (os.path.join(SPECPATH, 'data_cleanup/templates'), 'data_cleanup/templates'),  
+    (os.path.join(SPECPATH, 'accounts/templates'), 'accounts/templates'),          
     (os.path.join(SPECPATH, 'media'), 'media'),
 ]
 

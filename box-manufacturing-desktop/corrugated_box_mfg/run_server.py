@@ -50,6 +50,17 @@ def run_server():
     print("Applying migrations...")
     execute_from_command_line(['manage.py', 'migrate', '--noinput'])
     
+    # Create superuser if needed
+    try:
+        from django.contrib.auth.models import User
+        # Check if superuser exists
+        if not User.objects.filter(is_superuser=True).exists():
+            print("Creating default admin user...")
+            User.objects.create_superuser('admin', 'admin@example.com', 'admin')
+            print("Default admin user created with username 'admin' and password 'admin'")
+    except Exception as e:
+        print(f"Error creating superuser: {e}")
+    
     # Collect static files
     print("Collecting static files...")
     execute_from_command_line(['manage.py', 'collectstatic', '--noinput'])
