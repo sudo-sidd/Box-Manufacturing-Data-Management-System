@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>Data Cleanup Dashboard</h1>
+            <p class="text-muted">Use this page to clear data from the system. All operations are permanent and cannot be undone.</p>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row">
+        <!-- Inventory Cleanup Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Inventory Data</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Current Records:</h6>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Paper Reels
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.paper_reels }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Pasting Gum
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.pasting_gum }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Ink
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.ink }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Strapping Roll
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.strapping_roll }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Pin Coil
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.pin_coil }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Inventory Logs
+                            <span class="badge bg-primary rounded-pill">{{ inventory_stats.inventory_logs }}</span>
+                        </li>
+                    </ul>
+                    <form method="post" action="{% url 'data_cleanup:clear_inventory' %}" onsubmit="return confirm('Are you sure you want to delete ALL inventory data? This cannot be undone.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm" value="yes">
+                        <button type="submit" class="btn btn-danger w-100">Clear All Inventory Data</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orders Cleanup Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Order Data</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Current Records:</h6>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Box Orders
+                            <span class="badge bg-success rounded-pill">{{ orders_stats.orders }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Material Requirements
+                            <span class="badge bg-success rounded-pill">{{ orders_stats.material_requirements }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Manufacturing Costs
+                            <span class="badge bg-success rounded-pill">{{ orders_stats.manufacturing_costs }}</span>
+                        </li>
+                    </ul>
+                    <form method="post" action="{% url 'data_cleanup:clear_orders' %}" onsubmit="return confirm('Are you sure you want to delete ALL order data? This cannot be undone.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm" value="yes">
+                        <button type="submit" class="btn btn-danger w-100">Clear All Order Data</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Templates Cleanup Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Box Templates</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Current Records:</h6>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Box Templates
+                            <span class="badge bg-info rounded-pill">{{ templates_stats.box_templates }}</span>
+                        </li>
+                    </ul>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        You must clear all orders before clearing box templates.
+                    </div>
+                    <form method="post" action="{% url 'data_cleanup:clear_templates' %}" onsubmit="return confirm('Are you sure you want to delete ALL box template data? This cannot be undone.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm" value="yes">
+                        <button type="submit" class="btn btn-danger w-100" {% if orders_stats.orders > 0 %}disabled{% endif %}>Clear All Box Templates</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Full System Cleanup Card -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Full System Reset</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Clear Everything:</h6>
+                    <div class="alert alert-danger mb-3">
+                        <p><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>WARNING:</strong></p>
+                        <p class="mb-0">This will delete ALL data from the system, including:</p>
+                        <ul class="mb-0">
+                            <li>All inventory transactions</li>
+                            <li>All inventory summaries</li>
+                            <li>All inventory logs</li>
+                            <li>All box orders</li>
+                            <li>All material requirements</li>
+                            <li>All manufacturing costs</li>
+                            <li>All box templates</li>
+                        </ul>
+                    </div>
+                    <form method="post" action="{% url 'data_cleanup:clear_all' %}" onsubmit="return confirm('⚠️ DANGER: This will DELETE ALL DATA IN THE SYSTEM. This is irreversible. Type CONFIRM in the box below to proceed.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="confirm" value="yes">
+                        <button type="submit" class="btn btn-danger w-100">RESET ENTIRE SYSTEM</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

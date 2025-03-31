@@ -1,0 +1,46 @@
+body {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.content-wrapper {
+    padding: 2rem;
+    flex: 1;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.table th {
+    font-weight: 600;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Status badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+}
+
+/* Button customizations */
+.btn-custom {
+    min-width: 120px;
+}
+
+/* Navbar active state */
+.navbar-dark .navbar-nav .nav-link.active {
+    color: #fff;
+    font-weight: 500;
+}

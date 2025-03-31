@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'inventory',
     'finished_goods',
+    'data_cleanup',
+    'accounts',
 ]
 
 # Middleware configuration
@@ -105,17 +107,11 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files configuration
-STATIC_URL = 'static/'
-STATIC_ROOT = os.environ.get('STATIC_ROOT', BASE_DIR / 'static')
-
-# Only add STATICFILES_DIRS in development mode and ensure it doesn't conflict with STATIC_ROOT
-if not getattr(sys, 'frozen', False):
-    STATICFILES_DIRS = [
-        BASE_DIR / 'inventory/static',
-        BASE_DIR / 'finished_goods/static',
-    ]
-else:
-    STATICFILES_DIRS = []
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
@@ -125,3 +121,6 @@ MEDIA_ROOT = os.environ.get('MEDIA_ROOT', BASE_DIR / 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Set login URL
+LOGIN_URL = 'login'
