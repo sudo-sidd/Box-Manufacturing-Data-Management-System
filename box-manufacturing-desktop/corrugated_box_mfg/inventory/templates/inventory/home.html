@@ -1,64 +1,83 @@
 {% extends 'base.html' %}
 
-{% block title %}Home - Inventory System{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="text-center mb-5">
-    <h1 class="display-4">Corrugated Box Manufacturing</h1>
-    <p class="lead">Inventory and Production Management System</p>
-</div>
-
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-box-seam display-4 text-primary mb-3"></i>
-                <h5 class="card-title">Inventory Overview</h5>
-                <p class="card-text">View and manage current stock levels of all materials</p>
-                <a href="{% url 'inventory_overview' %}" class="btn btn-primary btn-custom">
-                    <i class="bi bi-arrow-right"></i> View Inventory
-                </a>
+<div class="container mt-4">
+    {% if login_required %}
+        <!-- Content for unauthenticated users -->
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <div class="p-5 mb-4 bg-light rounded-3">
+                    <div class="container-fluid py-5">
+                        <h1 class="display-5 fw-bold">Box Manufacturing CRM</h1>
+                        <p class="fs-4">Manage your inventory, track orders, and optimize your box manufacturing process.</p>
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Login to Continue</a>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-plus-circle display-4 text-success mb-3"></i>
-                <h5 class="card-title">Add Inventory</h5>
-                <p class="card-text">Add new items to inventory stock</p>
-                <a href="{% url 'add_inventory' %}" class="btn btn-success btn-custom">
-                    <i class="bi bi-plus-lg"></i> Add Items
-                </a>
+    {% elif error_message %}
+        <!-- Display error message if any -->
+        <div class="alert alert-warning">
+            <h4>Warning</h4>
+            <p>{{ error_message }}</p>
+        </div>
+    {% else %}
+        <!-- Content for authenticated users - dashboard -->
+        <h1>{{ title }}</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Recent Orders</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_orders %}
+                            <div class="list-group">
+                                {% for order in recent_orders %}
+                                    <a href="{% url 'finished_goods:order-detail' order.pk %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ order.order_number }}</h6>
+                                            <small>{{ order.created_at|date:"d M Y" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ order.customer_name }}</p>
+                                        <small>Status: {{ order.get_status_display }}</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No recent orders.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if activity_logs %}
+                            <div class="list-group">
+                                {% for log in activity_logs %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ log.item_type }}</h6>
+                                            <small>{{ log.timestamp|date:"d M Y H:i" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ log.action }}</p>
+                                        <small>{{ log.details }}</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No recent activity.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-boxes display-4 text-warning mb-3"></i>
-                <h5 class="card-title">Finished Goods</h5>
-                <p class="card-text">Manage finished products and orders</p>
-                <a href="/finished-goods/" class="btn btn-warning btn-custom">
-                    <i class="bi bi-arrow-right"></i> Manage Products
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-graph-up display-4 text-info mb-3"></i>
-                <h5 class="card-title">Reports & Analytics</h5>
-                <p class="card-text">View reports and cost analysis</p>
-                <a href="#" class="btn btn-info btn-custom">
-                    <i class="bi bi-bar-chart"></i> View Reports
-                </a>
-            </div>
-        </div>
-    </div>
+    {% endif %}
 </div>
 {% endblock %}

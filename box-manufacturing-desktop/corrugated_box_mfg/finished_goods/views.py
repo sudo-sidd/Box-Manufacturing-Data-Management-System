@@ -5,11 +5,14 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.db.models import Q
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from decimal import Decimal
 
 from .models import BoxDetails, BoxPaperRequirements, BoxOrder, MaterialRequirement, ManufacturingCost
 from .forms import BoxDetailsForm, BoxPaperRequirementsForm, BoxOrderForm
 
+@login_required
 def get_field_suggestions(request):
     field = request.GET.get('field')
     query = request.GET.get('query', '')
@@ -27,11 +30,12 @@ def get_field_suggestions(request):
 
     return JsonResponse({'suggestions': []})
 
-class BoxCreateView(CreateView):
+class BoxCreateView(LoginRequiredMixin, CreateView):
     model = BoxDetails
     form_class = BoxDetailsForm
     template_name = 'finished_goods/box_form.html'
     success_url = reverse_lazy('finished_goods:box-list')
+    login_url = '/accounts/login/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,22 +60,25 @@ class BoxCreateView(CreateView):
         else:
             return self.render_to_response(self.get_context_data(form=form))
 
-class BoxListView(ListView):
+class BoxListView(LoginRequiredMixin, ListView):
     model = BoxDetails
     template_name = 'finished_goods/box_list.html'
     context_object_name = 'boxes'
     ordering = ['-created_at']
+    login_url = '/accounts/login/'
 
-class BoxDetailView(DetailView):
+class BoxDetailView(LoginRequiredMixin, DetailView):
     model = BoxDetails
     template_name = 'finished_goods/box_detail.html'
     context_object_name = 'box'
+    login_url = '/accounts/login/'
 
-class BoxUpdateView(UpdateView):
+class BoxUpdateView(LoginRequiredMixin, UpdateView):
     model = BoxDetails
     form_class = BoxDetailsForm
     template_name = 'finished_goods/box_form.html'
     success_url = reverse_lazy('finished_goods:box-list')
+    login_url = '/accounts/login/'
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -85,6 +92,7 @@ class BoxUpdateView(UpdateView):
         )
         return response
 
+@login_required
 def get_box_calculations(request):
     # Get basic box dimensions
     length = float(request.GET.get('length', 0))
@@ -183,11 +191,12 @@ def get_box_calculations(request):
         }
     })
 
-class BoxOrderCreateView(CreateView):
+class BoxOrderCreateView(LoginRequiredMixin, CreateView):
     model = BoxOrder
     form_class = BoxOrderForm
     template_name = 'finished_goods/order_form.html'
     success_url = reverse_lazy('finished_goods:order-list')
+    login_url = '/accounts/login/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -264,6 +273,7 @@ class BoxOrderCreateView(CreateView):
             'suggested_price': suggested_price
         }
 
+@login_required
 def calculate_order_requirements(request):
     template_id = request.GET.get('template_id')
     quantity = int(request.GET.get('quantity', 0))
@@ -325,16 +335,18 @@ def calculate_order_requirements(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-class BoxOrderListView(ListView):
+class BoxOrderListView(LoginRequiredMixin, ListView):
     model = BoxOrder
     template_name = 'finished_goods/order_list.html'
     context_object_name = 'orders'
     ordering = ['-created_at']
+    login_url = '/accounts/login/'
 
-class BoxOrderDetailView(DetailView):
+class BoxOrderDetailView(LoginRequiredMixin, DetailView):
     model = BoxOrder
     template_name = 'finished_goods/order_detail.html'
     context_object_name = 'order'
+    login_url = '/accounts/login/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -370,6 +382,7 @@ class BoxOrderDetailView(DetailView):
             
         return context
 
+@login_required
 @require_POST
 def update_order_status(request, pk):
     try:

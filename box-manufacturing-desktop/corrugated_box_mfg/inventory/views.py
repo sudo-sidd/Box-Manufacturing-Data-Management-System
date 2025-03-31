@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
 from django.db.models import Sum, Avg, Q
+from django.contrib.auth.decorators import login_required
 from .models import (
     # Transaction Models
     PaperReel, PastingGum, Ink, StrappingRoll, PinCoil,
@@ -12,7 +13,9 @@ from .models import (
     Preset, InventoryLog
 )
 from decimal import Decimal
+from finished_goods.models import BoxOrder
 
+@login_required
 def inventory_overview(request):
     view_type = request.GET.get('view', 'summary')
     context = {
@@ -26,6 +29,7 @@ def inventory_overview(request):
     }
     return render(request, 'inventory/inventory_overview.html', context)
 
+@login_required
 def get_summary_context():
     """Get aggregated inventory data"""
     return {
@@ -36,6 +40,7 @@ def get_summary_context():
         'pin_coils': PinCoilSummary.objects.all(),
     }
 
+@login_required
 def get_transaction_context():
     """Get detailed transaction history"""
     return {
@@ -47,13 +52,47 @@ def get_transaction_context():
     }
 
 def inventory_home(request):
-    return render(request, "inventory/home.html")
+    """Home page with different views for logged-in vs anonymous users"""
+    if request.user.is_authenticated:
+        # Show the full dashboard for authenticated users
+        try:
+            from inventory.models import (
+                PaperReelSummary, PastingGumSummary, InkSummary, 
+                StrappingRollSummary, PinCoilSummary, InventoryLog
+            )
+            
+            context = {
+                'title': 'Dashboard',
+                'paper_reels': PaperReelSummary.objects.all(),
+                'pasting_gum': PastingGumSummary.objects.all(),
+                'ink_stock': InkSummary.objects.all(),
+                'strapping_rolls': StrappingRollSummary.objects.all(),
+                'pin_coils': PinCoilSummary.objects.all(),
+                'recent_orders': BoxOrder.objects.all().order_by('-created_at')[:5],
+                'activity_logs': InventoryLog.objects.all()[:10],
+            }
+        except Exception as e:
+            # Handle any import or model errors gracefully
+            context = {
+                'title': 'Dashboard',
+                'error_message': f"Could not load dashboard data: {str(e)}"
+            }
+    else:
+        # Show a login prompt for unauthenticated users
+        context = {
+            'title': 'Welcome to Box Manufacturing CRM',
+            'login_required': True
+        }
+    
+    return render(request, 'inventory/home.html', context)
 
+@login_required
 def save_preset(category, value):
     """ Save a unique preset value if it doesn't exist """
     if value and not Preset.objects.filter(category=category, value=value).exists():
         Preset.objects.create(category=category, value=value)
 
+@login_required
 def calculate_prices(quantity, price_per_kg, freight, extra_charges, tax_percent):
     """ Calculate total price excluding tax, tax amount, and final total """
     total_price_ex_tax = (quantity * price_per_kg) + freight + extra_charges
@@ -61,6 +100,7 @@ def calculate_prices(quantity, price_per_kg, freight, extra_charges, tax_percent
     total_price = total_price_ex_tax + tax_amount
     return total_price_ex_tax, tax_amount, total_price
 
+@login_required
 def add_inventory(request):
     if request.method == "POST":
         try:
@@ -125,11 +165,13 @@ def add_inventory(request):
             return redirect("add_inventory")
     return render(request, "inventory/add_inventory.html")
 
+@login_required
 def get_presets(request):
     category = request.GET.get("category")
     presets = Preset.objects.filter(category=category).values_list("value", flat=True)
     return JsonResponse(list(presets), safe=False)
 
+@login_required
 def delete_inventory(request, model_name, item_id):
     # Map URL parameters to model classes
     model_map = {
@@ -164,6 +206,7 @@ def delete_inventory(request, model_name, item_id):
             })
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+@login_required
 def edit_inventory(request, model_name, item_id):
     # Map URL parameters to model classes
     model_map = {
@@ -259,6 +302,7 @@ def edit_inventory(request, model_name, item_id):
         })
     return JsonResponse({'status': 'success', 'data': data})
 
+@login_required
 def log_inventory_action(item_type, item_id, action, details):
     InventoryLog.objects.create(
         item_type=item_type,
@@ -267,6 +311,7 @@ def log_inventory_action(item_type, item_id, action, details):
         details=details
     )
 
+@login_required
 def update_summary_tables(instance, action='add'):
     """Update summary tables when transactions occur"""
     if isinstance(instance, PaperReel):
@@ -434,6 +479,7 @@ def update_summary_tables(instance, action='add'):
         
         summary.save()
 
+@login_required
 def get_field_suggestions(request):
     """
     Get suggestions for form fields based on existing data in the database.
