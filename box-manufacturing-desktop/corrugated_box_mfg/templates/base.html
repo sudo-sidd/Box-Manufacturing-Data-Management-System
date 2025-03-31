@@ -74,16 +74,123 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Fix navigation highlight
-    // const currentPath = window.location.pathname;
-    // const navLinks = document.querySelectorAll('.sidebar .nav-link');
-
-    // navLinks.forEach(link => {
-    //     const href = link.getAttribute('href');
-    //     if (currentPath.includes(href) && href !== '/') {
-    //         link.classList.add('active');
-    //     }
-    // });
+    // Handle order status updates
+    const statusDropdowns = document.querySelectorAll('select[data-order-id]');
+    statusDropdowns.forEach(dropdown => {
+        dropdown.addEventListener('change', function() {
+            const orderId = this.getAttribute('data-order-id');
+            const newStatus = this.value;
+            
+            // Show a small loading indicator
+            const statusCell = this.closest('td');
+            const originalContent = statusCell.innerHTML;
+            statusCell.innerHTML += ' <span class="spinner-border spinner-border-sm" role="status"></span>';
+            
+            // Send AJAX request to update the status
+            fetch(`/finished-goods/orders/${orderId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `status=${encodeURIComponent(newStatus)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusCell.innerHTML = originalContent;
+                if (data.success) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.role = 'alert';
+                    alertDiv.innerHTML = `
+                        Order #${orderId} status updated to ${newStatus}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('main.content-wrapper').prepend(alertDiv);
+                    
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(() => {
+                        const bsAlert = new bootstrap.Alert(alertDiv);
+                        bsAlert.close();
+                    }, 3000);
+                } else {
+                    // Revert to previous selection
+                    this.value = this.getAttribute('data-original-status');
+                    alert('Error updating order status: ' + data.error);
+                }
+            })
+            .catch(error => {
+                statusCell.innerHTML = originalContent;
+                this.value = this.getAttribute('data-original-status');
+                alert('Error updating order status: ' + error);
+            });
+        });
+        
+        // Store the original status
+        dropdown.setAttribute('data-original-status', dropdown.value);
+    });
+    
+    // Handle order detail view buttons
+    const viewOrderButtons = document.querySelectorAll('.view-order-btn');
+    viewOrderButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const orderId = this.getAttribute('data-order-id');
+            
+            // Check if modal exists, create if not
+            let orderModal = document.getElementById('orderDetailModal');
+            if (!orderModal) {
+                const modalHTML = `
+                    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="orderDetailModalLabel">Order Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                orderModal = document.getElementById('orderDetailModal');
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(orderModal);
+            modal.show();
+            
+            // Fetch order details
+            fetch(`/finished-goods/orders/${orderId}/details/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const modalBody = orderModal.querySelector('.modal-body');
+                modalBody.innerHTML = html;
+            })
+            .catch(error => {
+                orderModal.querySelector('.modal-body').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading order details: ${error}
+                    </div>
+                `;
+            });
+        });
+    });
 });
 </script>
 </body>

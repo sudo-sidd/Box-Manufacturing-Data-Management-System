@@ -50,6 +50,9 @@ body {
 {% endblock %}
 
 {% block finished_goods_content %}
+<!-- Add CSRF token here -->
+{% csrf_token %}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Box Orders</h1>
     <a href="{% url 'finished_goods:order-create' %}" class="btn btn-primary">
@@ -79,8 +82,8 @@ body {
                         <td>{{ order.customer_name }}</td>
                         <td>{{ order.box_template.box_name }}</td>
                         <td>{{ order.quantity }}</td>
-                        <td>
-                            <span class="badge bg-{{ order.get_status_color }}">
+                        <td class="status-cell">
+                            <span class="badge {% if order.status == 'PLACED' %}bg-secondary{% elif order.status == 'MANUFACTURING' %}bg-primary{% elif order.status == 'PRODUCTION_COMPLETE' %}bg-info{% elif order.status == 'SHIPPED' %}bg-warning{% elif order.status == 'DELIVERED' or order.status == 'COMPLETED' %}bg-success{% endif %}">
                                 {{ order.get_status_display }}
                             </span>
                         </td>
@@ -121,6 +124,16 @@ body {
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Function to get CSRF token
+    function getCsrfToken() {
+        const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!token) {
+            console.error('CSRF token not found in the page');
+            return '';
+        }
+        return token;
+    }
+    
     // Add event listeners for status update links
     const statusLinks = document.querySelectorAll('.update-status');
     statusLinks.forEach(link => {
@@ -129,58 +142,99 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderId = this.dataset.id;
             const status = this.dataset.status;
             
-            // Your existing fetch code
+            // Show loading indication
+            const actionCell = this.closest('td');
+            const originalHtml = actionCell.innerHTML;
+            actionCell.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
+            
+            const csrfToken = getCsrfToken();
+            if (!csrfToken) {
+                actionCell.innerHTML = originalHtml;
+                alert('CSRF token missing. Please refresh the page and try again.');
+                return;
+            }
+            
+            console.log(`Updating order ${orderId} to status: ${status}`);
+            
             fetch(`/finished-goods/orders/${orderId}/update-status/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({ status: status })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    // Instead of full page reload, update just the status cell
+                    const statusCell = actionCell.closest('tr').querySelector('.status-cell');
+                    if (statusCell) {
+                        // Update status display
+                        updateStatusDisplay(statusCell, status);
+                    }
+                    // Restore action buttons
+                    actionCell.innerHTML = originalHtml;
+                    
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.role = 'alert';
+                    alertDiv.innerHTML = `
+                        Order status updated to ${getStatusDisplayText(status)}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.card').before(alertDiv);
+                    
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(() => {
+                        alertDiv.classList.remove('show');
+                        setTimeout(() => alertDiv.remove(), 150);
+                    }, 3000);
                 } else {
-                    alert('Error updating order status: ' + data.error);
+                    actionCell.innerHTML = originalHtml;
+                    alert('Error updating order status: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
+                actionCell.innerHTML = originalHtml;
                 console.error('Error:', error);
-                alert('An error occurred while updating the order status.');
+                alert('An error occurred while updating the order status: ' + error.message);
             });
         });
     });
     
-    // Better Select2 initialization and dropdown handling
-    $('select').select2({
-        width: 'resolve',
-        dropdownAutoWidth: true,
-        dropdownParent: $('body'), // This automatically attaches to body
-        dropdownCssClass: 'select2-larger-dropdown'
-    });
+    // Helper function to update status display
+    function updateStatusDisplay(statusCell, newStatus) {
+        const statusMap = {
+            'PLACED': { class: 'bg-secondary', text: 'Order Placed' },
+            'MANUFACTURING': { class: 'bg-primary', text: 'Manufacturing' },
+            'PRODUCTION_COMPLETE': { class: 'bg-info', text: 'Production Complete' },
+            'SHIPPED': { class: 'bg-warning', text: 'Shipped' },
+            'DELIVERED': { class: 'bg-success', text: 'Delivered' },
+            'COMPLETED': { class: 'bg-success', text: 'Completed' }
+        };
+        
+        const status = statusMap[newStatus] || { class: 'bg-secondary', text: newStatus };
+        statusCell.innerHTML = `<span class="badge ${status.class}">${status.text}</span>`;
+    }
     
-    // Add extra CSS after initialization
-    $('<style>')
-        .prop('type', 'text/css')
-        .html(`
-            .select2-larger-dropdown {
-                z-index: 99999;
-                max-height: none !important;
-            }
-            .select2-results {
-                max-height: 400px !important; 
-            }
-            .select2-results__options {
-                max-height: 400px !important;
-            }
-        `)
-        .appendTo('head');
-    
-    // Helper function to get CSRF token
-    function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    // Helper to get display text for a status
+    function getStatusDisplayText(statusCode) {
+        const statusMap = {
+            'PLACED': 'Order Placed',
+            'MANUFACTURING': 'Manufacturing',
+            'PRODUCTION_COMPLETE': 'Production Complete',
+            'SHIPPED': 'Shipped',
+            'DELIVERED': 'Delivered',
+            'COMPLETED': 'Completed'
+        };
+        return statusMap[statusCode] || statusCode;
     }
 });
 </script>

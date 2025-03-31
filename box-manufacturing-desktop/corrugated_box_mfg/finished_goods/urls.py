@@ -19,7 +19,8 @@ urlpatterns = [
     path('orders/', views.BoxOrderListView.as_view(), name='order-list'),
     path('orders/create/', views.BoxOrderCreateView.as_view(), name='order-create'),
     path('orders/<int:pk>/', views.BoxOrderDetailView.as_view(), name='order-detail'),
-    path('orders/<int:order_id>/update-status/', views.update_order_status, name='update-order-status'),
+    path('orders/<int:pk>/update-status/', views.update_order_status, name='update-status'),
+    path('orders/<int:pk>/details/', views.order_details, name='order-details'),
     
     # API endpoints
     path('api/suggestions/', views.get_field_suggestions, name='field-suggestions'),

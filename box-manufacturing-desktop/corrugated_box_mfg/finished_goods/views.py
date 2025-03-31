@@ -350,7 +350,7 @@ class BoxOrderDetailView(DetailView):
                 'Corrugated Medium': {
                     'quantity': material_requirements.bottom_paper_weight,
                     'unit': 'sqm',
-                    'cost': material_requirements.paper_cost * 0.7  # Estimated cost
+                    'cost': material_requirements.paper_cost * Decimal('0.7')  # Estimated cost
                 },
                 'Adhesive': {
                     'quantity': material_requirements.ink_cost,
@@ -371,25 +371,26 @@ class BoxOrderDetailView(DetailView):
         return context
 
 @require_POST
-def update_order_status(request, order_id):
+def update_order_status(request, pk):
     try:
-        data = json.loads(request.body)
-        status = data.get('status')
+        order = BoxOrder.objects.get(pk=pk)
         
-        order = get_object_or_404(BoxOrder, id=order_id)
-        order.status = status
-        order.save()
-        
-        return JsonResponse({
-            'success': True,
-            'status': order.status,
-            'status_display': order.get_status_display()
-        })
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            status = data.get('status')
+        else:
+            status = request.POST.get('status')
+            
+        if status in [choice[0] for choice in BoxOrder.STATUS_CHOICES]:
+            order.status = status
+            order.save()
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'error': 'Invalid status'})
+    except BoxOrder.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Order not found'})
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=400)
+        return JsonResponse({'success': False, 'error': str(e)})
 
 def search_box_template(request):
     query = request.GET.get('q', '')
@@ -404,3 +405,9 @@ def search_box_template(request):
         } for box in boxes]
         return JsonResponse({'results': results})
     return JsonResponse({'results': []})
+
+def order_details(request, pk):
+    order = get_object_or_404(BoxOrder, pk=pk)
+    context = {'order': order}
+    # Add additional context data as needed
+    return render(request, 'finished_goods/includes/order_details.html', context)
