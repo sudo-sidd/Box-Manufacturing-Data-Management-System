@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - db_volume:/app/db
+    environment:
+      - DEBUG=0
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-default-key-for-docker}
+      - DATABASE_PATH=/app/db/db.sqlite3
+    ports:
+      - "8000:8000"
+    command: >
+      bash -c "python manage.py migrate --noinput &&
+              python manage.py create_default_admin &&
+              gunicorn box_mfg.wsgi:application --bind 0.0.0.0:8000"
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+volumes:
+  static_volume:
+  media_volume:
+  db_volume:

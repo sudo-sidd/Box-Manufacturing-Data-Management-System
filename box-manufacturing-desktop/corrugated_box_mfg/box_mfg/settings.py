@@ -21,7 +21,7 @@ SECRET_KEY = 'django-insecure-@6)5suyjq(-h6pyy6zah$74kmdy3*nln$j8uq+qvp0#eby=%f^
 DEBUG = not getattr(sys, 'frozen', False)
 
 # Host settings
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', '*']
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # Application definition
@@ -77,7 +77,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'box_mfg.wsgi.application'
 
 # Database configuration
-if getattr(sys, 'frozen', False):
+if os.environ.get('DATABASE_PATH'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.environ.get('DATABASE_PATH'),
+        }
+    }
+elif getattr(sys, 'frozen', False):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -116,8 +123,8 @@ STATICFILES_DIRS = [
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files configuration
-MEDIA_URL = 'media/'
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT', BASE_DIR / 'media')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
