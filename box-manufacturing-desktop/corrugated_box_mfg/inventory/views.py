@@ -154,7 +154,7 @@ def add_inventory(request):
 
             # Log the action
             details = f"Added {item_type} from {common_data['company_name']}"
-            log_inventory_action(item_type, item.id, 'ADD', details)
+            log_inventory_action(request, item_type, item.id, 'ADD', details)
 
             # Update summary tables
             update_summary_tables(item, action='add')
@@ -190,7 +190,7 @@ def delete_inventory(request, model_name, item_id):
                 update_summary_tables(item, 'delete')
                 item.delete()
                 # Log the action
-                log_inventory_action(model_name, item_id, 'DELETE', details)
+                log_inventory_action(request, model_name, item_id, 'DELETE', details)
                 return JsonResponse({
                     'status': 'success',
                     'message': f'{model_name.replace("_", " ").title()} deleted successfully'
@@ -256,7 +256,7 @@ def edit_inventory(request, model_name, item_id):
             update_summary_tables(item, 'add')
             # Log the action
             details = f"Modified {model_name} - {item.company_name}"
-            log_inventory_action(model_name, item_id, 'EDIT', details)
+            log_inventory_action(request, model_name, item_id, 'EDIT', details)
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
@@ -303,15 +303,16 @@ def edit_inventory(request, model_name, item_id):
     return JsonResponse({'status': 'success', 'data': data})
 
 @login_required
-def log_inventory_action(item_type, item_id, action, details):
+def log_inventory_action(request, item_type, item_id, action, details):
     InventoryLog.objects.create(
         item_type=item_type,
         item_id=item_id,
         action=action,
-        details=details
+        details=details,
+        user=request.user.username if hasattr(request, 'user') else 'System'
     )
 
-@login_required
+
 def update_summary_tables(instance, action='add'):
     """Update summary tables when transactions occur"""
     if isinstance(instance, PaperReel):
@@ -528,35 +529,4 @@ def get_field_suggestions(request):
         return JsonResponse({'suggestions': suggestions})
     except Exception as e:
         print(f"Error getting suggestions: {str(e)}")
-        return JsonResponse({'suggestions': [], 'error': str(e)})     # Debug log
-    field = request.GET.get('field')
-    model_type = request.GET.get('model_type')
-    query = request.GET.get('query', '')
-    
-    print(f"Searching for: field={field}, model_type={model_type}, query={query}")  # Debug log
-    
-    model_map = {
-        'Paper Reel': PaperReel,
-        'Pasting Gum': PastingGum,
-        'Ink': Ink,
-        'Strapping Roll': StrappingRoll,
-        'Pin Coil': PinCoil
-    }
-    
-    if not field or not query or not model_type:
-        return JsonResponse({'suggestions': []})
-    
-    model = model_map.get(model_type)
-    if not model:
-        return JsonResponse({'suggestions': []})
-    
-    # Get unique values for the requested field
-    # Use icontains for case-insensitive matching
-    queryset = model.objects.filter(
-        **{f"{field}__icontains": query}
-    ).values_list(field, flat=True).distinct().order_by(field)[:10]
-    
-    suggestions = list(queryset)
-    print(f"Found suggestions: {suggestions}")  # Debug log
-    
-    return JsonResponse({'suggestions': suggestions})
+        return JsonResponse({'suggestions': [], 'error': str(e)})
