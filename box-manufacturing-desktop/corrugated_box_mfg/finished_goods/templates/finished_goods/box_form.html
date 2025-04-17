@@ -19,6 +19,13 @@
     .constants-table td, .constants-table th {
         padding: 5px 10px;
     }
+    .multi-box-calculator {
+        background-color: #f0f8ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 15px;
+        border: 1px solid #ccc;
+    }
 </style>
 {% endblock %}
 
@@ -195,6 +202,29 @@
             <!-- Results will be displayed here -->
         </div>
         
+        <!-- Multi-Box Calculator -->
+        <div id="multi-box-calculator" class="multi-box-calculator mt-4" style="display:none;">
+            <h5>Multi-Box Price Calculator</h5>
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="box-quantity">Number of Boxes</label>
+                        <input type="number" id="box-quantity" class="form-control" value="1" min="1" step="1">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <button id="calculate-multiple-btn" class="btn btn-primary">Calculate Total</button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="multi-box-result" class="mt-2">
+                        <strong>Total Cost: </strong><span id="total-cost">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Constants and Calculation Details Section -->
         <div id="calculation-details" style="display:none;" class="mt-4">
             <div class="card">
@@ -286,6 +316,9 @@ document.addEventListener('DOMContentLoaded', function() {
         PAPER_COST_PER_KG: 80,
         LABOR_COST_PERCENTAGE: 0.3
     };
+    
+    // Store the last calculated results for multi-box calculations
+    let lastCalculatedResults = null;
     
     // Set up ply count change handler
     const numPliesSelect = document.getElementById('id_num_plies');
@@ -385,7 +418,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 paperWeights.top_paper_weight = (paperArea * paperGsms.top_paper_gsm) / 1550;
 
                 // For flute papers (with Take-Up Factor)
-                paperWeights.flute_paper_weight = (paperArea * paperGsms.flute_paper_gsm * CONSTANTS.FLUTE_TUF) / 1550;
+                if (paperGsms.flute_paper_gsm > 0) {
+                    paperWeights.flute_paper_weight = (paperArea * paperGsms.flute_paper_gsm * CONSTANTS.FLUTE_TUF) / 1550;
+                } else {
+                    paperWeights.flute_paper_weight = 0;
+                }
 
                 const paperCosts = {};
                 
@@ -467,15 +504,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     cost_estimates: costs
                 };
                 
+                // Store the last calculated results for multi-box calculations
+                lastCalculatedResults = results;
+                
                 // Display the results
                 displayResults(results, length, breadth, height, paperGsms, CONSTANTS);
                 
-                // Show calculation details section
+                // Show calculation details section and multi-box calculator
                 document.getElementById('calculation-details').style.display = 'block';
+                document.getElementById('multi-box-calculator').style.display = 'block';
+                
+                // Initialize the multi-box calculator with the current single box cost
+                document.getElementById('total-cost').textContent = `₹${results.cost_estimates.cost_per_box.toFixed(4)}`;
+                document.getElementById('box-quantity').value = 1;
                 
             } catch (error) {
                 console.error("Error during calculation:", error);
                 alert("Error: " + error.message);
+            }
+        });
+    }
+    
+    // Add click handler for multi-box calculator
+    const calculateMultipleBtn = document.getElementById('calculate-multiple-btn');
+    if (calculateMultipleBtn) {
+        calculateMultipleBtn.addEventListener('click', function() {
+            const quantity = parseInt(document.getElementById('box-quantity').value) || 1;
+            
+            if (lastCalculatedResults) {
+                const costPerBox = lastCalculatedResults.cost_estimates.cost_per_box;
+                const totalOrderCost = costPerBox * quantity;
+                
+                document.getElementById('total-cost').textContent = `₹${totalOrderCost.toFixed(4)}`;
+                
+                // Update the cost formulas to include the multi-box calculation
+                const costFormulas = document.getElementById('cost-formulas');
+                if (costFormulas) {
+                    const costFormulasHTML = `
+                        <div class="calculation-formula">Material Cost = ${lastCalculatedResults.total_material_weight.toFixed(6)} kg × ₹${CONSTANTS.PAPER_COST_PER_KG} = ₹${lastCalculatedResults.cost_estimates.material_cost.toFixed(4)}</div>
+                        <div class="calculation-formula">Labor Cost = ₹${lastCalculatedResults.cost_estimates.material_cost.toFixed(4)} × ${CONSTANTS.LABOR_COST_PERCENTAGE} = ₹${lastCalculatedResults.cost_estimates.labor_cost.toFixed(4)}</div>
+                        <div class="calculation-formula">Total Cost = ₹${lastCalculatedResults.cost_estimates.material_cost.toFixed(4)} + ₹${lastCalculatedResults.cost_estimates.labor_cost.toFixed(4)} = ₹${lastCalculatedResults.cost_estimates.cost_per_box.toFixed(4)}</div>
+                        <div class="calculation-formula">Total Order Cost (${quantity} boxes) = ₹${costPerBox.toFixed(4)} × ${quantity} = ₹${totalOrderCost.toFixed(4)}</div>
+                    `;
+                    costFormulas.innerHTML = costFormulasHTML;
+                }
+            } else {
+                alert('Please calculate the box cost first');
             }
         });
     }
@@ -576,12 +650,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <th>Total Production Cost</th>
                                     <td>₹${results.cost_estimates.cost_per_box.toFixed(4)}</td>
                                 </tr>
-                                ${results.cost_estimates.num_boxes > 1 ? `
-                                <tr class="table-info">
-                                    <th>Total Order Cost (${results.cost_estimates.num_boxes} boxes)</th>
-                                    <td>₹${results.cost_estimates.total_order_cost.toFixed(4)}</td>
-                                </tr>
-                                ` : ''}
                             </table>
                         </div>
                     </div>
