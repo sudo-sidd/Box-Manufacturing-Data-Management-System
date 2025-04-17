@@ -24,6 +24,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/suggestions/', views.get_field_suggestions, name='field-suggestions'),
-    path('calculations/', views.get_box_calculations, name='calculations'),
+    path('calculations/', views.get_box_calculations, name='box-calculations'),
+    path('get_box_calculations/', views.get_box_calculations, name='get-box-calculations'),  # Alternative path for backward compatibility
     path('calculate-requirements/', views.calculate_order_requirements, name='calculate-requirements'),
 ]

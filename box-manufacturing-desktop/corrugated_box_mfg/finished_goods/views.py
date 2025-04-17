@@ -106,9 +106,9 @@ def get_box_calculations(request):
     flute_type = request.GET.get('flute_type', 'B')
     num_plies = int(request.GET.get('num_plies', 3))
     
-    # Get paper specifications
-    top_paper_gsm = float(request.GET.get('top_paper_gsm', 120))
-    bottom_paper_gsm = float(request.GET.get('bottom_paper_gsm', 120))
+    # Get paper specifications with 0 as default
+    top_paper_gsm = float(request.GET.get('top_paper_gsm', 0))
+    bottom_paper_gsm = float(request.GET.get('bottom_paper_gsm', 0))
     
     # Calculate dimensions with shrinkage (as per requirements)
     length_with_shrinkage = length * 1.006
@@ -138,38 +138,57 @@ def get_box_calculations(request):
     elif full_length_in > 60:
         ups = "half length"
     
-    # Calculate paper weights based on dimensions and GSM
-    # For simplicity, assume a standard Take-Up Factor (TUF) of 1.35 for flute papers
-    tuf = 1.35
-    paper_price = 0.02  # Example price per square meter per GSM
+    # FIX: Calculate paper weights based on dimensions and GSM - corrected calculation
+    tuf = 1.35  # Take-Up Factor for flute papers
     
-    # Weight calculations
-    top_paper_weight = (full_length_in * reel_size_1up) * top_paper_gsm * paper_price
-    bottom_paper_weight = (full_length_in * reel_size_1up) * bottom_paper_gsm * paper_price
+    # Calculate surface area in square meters
+    # For a box, we need to account for all sides (length, breadth, height)
+    # Convert centimeters to meters by dividing by 100
+    length_m = length / 100
+    breadth_m = breadth / 100
+    height_m = height / 100
     
+    # Calculate area for each side and total
+    top_bottom_area = 2 * (length_m * breadth_m)  # Top and bottom
+    side_area_1 = 2 * (length_m * height_m)       # Two sides
+    side_area_2 = 2 * (breadth_m * height_m)      # Two sides
+    total_area = top_bottom_area + side_area_1 + side_area_2
+    
+    # Paper weight calculation (GSM = grams per square meter)
+    # Weight in kg = (area in m² × GSM) / 1000
+    top_paper_weight = (total_area * top_paper_gsm) / 1000
+    bottom_paper_weight = (total_area * bottom_paper_gsm) / 1000
+    
+    # Initialize additional weights
     additional_weights = {}
+    
+    # Calculate additional paper weights based on ply count
     if num_plies >= 5:
-        flute_paper_gsm = float(request.GET.get('flute_paper_gsm', 100))
-        additional_weights['flute_paper_weight'] = (full_length_in * reel_size_1up) * flute_paper_gsm * tuf * paper_price
+        flute_paper_gsm = float(request.GET.get('flute_paper_gsm', 0))
+        # Flute paper uses more material due to corrugation (hence TUF)
+        additional_weights['flute_paper_weight'] = (total_area * flute_paper_gsm * tuf) / 1000
     
     if num_plies == 7:
-        flute_paper1_gsm = float(request.GET.get('flute_paper1_gsm', 100))
-        middle_paper_gsm = float(request.GET.get('middle_paper_gsm', 100))
-        flute_paper2_gsm = float(request.GET.get('flute_paper2_gsm', 100))
+        flute_paper1_gsm = float(request.GET.get('flute_paper1_gsm', 0))
+        middle_paper_gsm = float(request.GET.get('middle_paper_gsm', 0))
+        flute_paper2_gsm = float(request.GET.get('flute_paper2_gsm', 0))
         
-        additional_weights['flute_paper1_weight'] = (full_length_in * reel_size_1up) * flute_paper1_gsm * tuf * paper_price
-        additional_weights['middle_paper_weight'] = (full_length_in * reel_size_1up) * middle_paper_gsm * paper_price
-        additional_weights['flute_paper2_weight'] = (full_length_in * reel_size_1up) * flute_paper2_gsm * tuf * paper_price
+        additional_weights['flute_paper1_weight'] = (total_area * flute_paper1_gsm * tuf) / 1000
+        additional_weights['middle_paper_weight'] = (total_area * middle_paper_gsm) / 1000
+        additional_weights['flute_paper2_weight'] = (total_area * flute_paper2_gsm * tuf) / 1000
     
-    # Surface area calculation (for reference)
-    area = length * breadth * 2 + length * height * 2 + breadth * height * 2
+    # Calculate total material weight
+    total_material_weight = top_paper_weight + bottom_paper_weight + sum(additional_weights.values())
     
-    # Cost estimates
-    material_cost = top_paper_weight + bottom_paper_weight + sum(additional_weights.values())
+    # Cost calculations
+    # Assume paper costs ₹80 per kg (adjust as needed)
+    paper_cost_per_kg = 80
+    material_cost = total_material_weight * paper_cost_per_kg
     labor_cost = material_cost * 0.3  # 30% of material cost
     total_cost = material_cost + labor_cost
     
-    return JsonResponse({
+    # Add more detailed data for the step-by-step calculation
+    response_data = {
         'dimensions': {
             'length': length_with_shrinkage,
             'breadth': breadth_with_shrinkage,
@@ -189,12 +208,52 @@ def get_box_calculations(request):
             'bottom_paper_weight': round(bottom_paper_weight, 2),
             **{k: round(v, 2) for k, v in additional_weights.items()}
         },
+        'total_area': round(total_area, 4),
+        'total_material_weight': round(total_material_weight, 2),
         'cost_estimates': {
             'material_cost': round(material_cost, 2),
             'labor_cost': round(labor_cost, 2),
             'total_cost': round(total_cost, 2)
+        },
+        'constants': {
+            'length_shrinkage_factor': 1.006,
+            'breadth_shrinkage_factor': 1.006,
+            'height_shrinkage_factor': 1.0112,
+            'flute_tuf': tuf,
+            'paper_cost_per_kg': paper_cost_per_kg,
+            'labor_cost_percentage': 0.3
+        },
+        'formulas': {
+            'dimensions': {
+                'length': f"{length} × 1.006 = {length_with_shrinkage:.2f} cm",
+                'breadth': f"{breadth} × 1.006 = {breadth_with_shrinkage:.2f} cm",
+                'height': f"{height} × 1.0112 = {height_with_shrinkage:.2f} cm",
+                'flute_size': f"({breadth} + 0.635) × 1.013575 ÷ 2 = {flute_size:.2f} cm",
+            },
+            'board_sizes': {
+                'full_length': f"(({length} + {breadth}) × 2 + 3.5 + 0.5) ÷ 2.54 = {full_length_in:.2f} in",
+                'half_length': f"(({length} + {breadth}) + 3.5 + 0.4) ÷ 2.54 = {half_length_in:.2f} in",
+                'reel_size_1up': f"(({height} + {flute_size} + {flute_size}) + 0.8) ÷ 2.54 = {reel_size_1up:.2f} in",
+                'reel_size_2up': f"((({height} + {flute_size} + {flute_size}) × 2) + 0.8) ÷ 2.54 = {reel_size_2up:.2f} in",
+            },
+            'surface_area': f"2 × ({length_m:.4f} × {breadth_m:.4f} + {length_m:.4f} × {height_m:.4f} + {breadth_m:.4f} × {height_m:.4f}) = {total_area:.4f} m²",
+            'paper_weights': {
+                'top_paper': f"{total_area:.4f} × {top_paper_gsm} ÷ 1000 = {top_paper_weight:.2f} kg",
+                'bottom_paper': f"{total_area:.4f} × {bottom_paper_gsm} ÷ 1000 = {bottom_paper_weight:.2f} kg",
+            },
+            'costs': {
+                'material_cost': f"{total_material_weight:.2f} × {paper_cost_per_kg} = {material_cost:.2f}",
+                'labor_cost': f"{material_cost:.2f} × 0.3 = {labor_cost:.2f}",
+                'total_cost': f"{material_cost:.2f} + {labor_cost:.2f} = {total_cost:.2f}"
+            }
         }
-    })
+    }
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Box calculations response data: {response_data}")
+    
+    return JsonResponse(response_data)
 
 class BoxOrderCreateView(LoginRequiredMixin, CreateView):
     model = BoxOrder
