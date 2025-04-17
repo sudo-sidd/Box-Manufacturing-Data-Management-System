@@ -30,7 +30,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="post">
+        <form method="post" id="box-form">
             {% csrf_token %}
             
             <div class="row">
@@ -206,11 +206,11 @@
                         <tbody>
                             <tr>
                                 <th>Length Shrinkage Factor</th>
-                                <td><span id="length-shrinkage-factor">1.006</span></td>
+                                <td><span id="length-shrinkage-factor">1.0060</span></td>
                             </tr>
                             <tr>
                                 <th>Breadth Shrinkage Factor</th>
-                                <td><span id="breadth-shrinkage-factor">1.006</span></td>
+                                <td><span id="breadth-shrinkage-factor">1.0060</span></td>
                             </tr>
                             <tr>
                                 <th>Height Shrinkage Factor</th>
@@ -218,7 +218,11 @@
                             </tr>
                             <tr>
                                 <th>Flute Take-Up Factor (TUF)</th>
-                                <td><span id="flute-tuf">1.35</span></td>
+                                <td><span id="flute-tuf">1.3500</span></td>
+                            </tr>
+                            <tr>
+                                <th>Conversion Factor (cm to in)</th>
+                                <td><span id="cm-to-inch">2.5400</span></td>
                             </tr>
                             <tr>
                                 <th>Paper Cost per kg (₹)</th>
@@ -268,181 +272,55 @@
 
 {% block extra_js %}
 <script src="{% static 'js/auto-suggest.js' %}"></script>
-<script src="{% static 'finished_goods/js/box_calculations.js' %}"></script>
 <script>
-function updatePaperRequirements(numPlies) {
-    const paperFields = document.querySelectorAll('.paper-field');
-    paperFields.forEach(field => {
-        const requiredPly = parseInt(field.dataset.ply);
-        field.style.display = requiredPly <= numPlies ? 'block' : 'none';
-    });
-}
-
-function updateCalculations() {
-    const length = document.getElementById('id_length').value;
-    const breadth = document.getElementById('id_breadth').value;
-    const height = document.getElementById('id_height').value;
-    
-    if (length && breadth && height) {
-        fetch(`/finished-goods/calculations/?length=${length}&breadth=${breadth}&height=${height}`)
-            .then(response => response.json())
-            .then(data => {
-                // Existing dimension calculations
-                document.getElementById('calc-length').textContent = data.dimensions.length.toFixed(4);
-                document.getElementById('calc-breadth').textContent = data.dimensions.breadth.toFixed(4);
-                document.getElementById('calc-height').textContent = data.dimensions.height.toFixed(4);
-                document.getElementById('calc-flute').textContent = data.dimensions.flute_size.toFixed(4);
-                document.getElementById('calc-full-length').textContent = data.board_sizes.full_length.toFixed(4);
-                document.getElementById('calc-half-length').textContent = data.board_sizes.half_length.toFixed(4);
-                document.getElementById('calc-reel-1up').textContent = data.board_sizes.reel_size_1up.toFixed(4);
-                document.getElementById('calc-reel-2up').textContent = data.board_sizes.reel_size_2up.toFixed(4);
-                document.getElementById('calc-ups').textContent = data.ups;
-                
-                // Add production cost calculations
-                if (data.cost_estimates) {
-                    document.getElementById('calc-material-cost').textContent = '₹' + data.cost_estimates.material_cost.toFixed(6);
-                    document.getElementById('calc-labor-cost').textContent = '₹' + data.cost_estimates.labor_cost.toFixed(6);
-                    document.getElementById('calc-production-cost').textContent = '₹' + data.cost_estimates.total_cost.toFixed(6);
-                }
-            });
-    }
-}
-
-// Replace the existing updatePaperFieldsVisibility function with this:
-function updatePaperFieldsVisibility() {
-    const numPlies = parseInt(document.getElementById('id_num_plies').value) || 3;
-    const flutePaperFields = document.querySelector('.flute-paper-fields');
-    const sevenPlyFields = document.querySelector('.seven-ply-fields');
-    
-    // Basic logic for showing/hiding sections
-    if (numPlies < 5) {
-        // For 3-ply, hide both 5-ply and 7-ply fields
-        flutePaperFields.style.display = 'none';
-        sevenPlyFields.style.display = 'none';
-    } else if (numPlies >= 5 && numPlies < 7) {
-        // For 5-ply, show only 5-ply fields
-        flutePaperFields.style.display = 'block';
-        sevenPlyFields.style.display = 'none';
-        
-        // Enable input fields for 5-ply section
-        enableFormFields(flutePaperFields, true);
-    } else if (numPlies >= 7) {
-        // For 7-ply, hide 5-ply fields and show 7-ply fields
-        flutePaperFields.style.display = 'none';
-        sevenPlyFields.style.display = 'block';
-        
-        // Disable 5-ply fields and enable 7-ply fields
-        enableFormFields(flutePaperFields, false);
-        enableFormFields(sevenPlyFields, true);
-    }
-}
-
-// Add this helper function to enable/disable form fields
-function enableFormFields(container, enable) {
-    const inputs = container.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        if (enable) {
-            input.removeAttribute('disabled');
-            input.classList.remove('disabled-field');
-        } else {
-            input.setAttribute('disabled', 'disabled');
-            input.classList.add('disabled-field');
-        }
-    });
-}
-
-// Display calculation formulas and steps
-function displayCalculationDetails(data) {
-    // Show calculation details section
-    document.getElementById('calculation-details').style.display = 'block';
-    
-    // Update dimension formulas
-    const dimensionFormulas = document.getElementById('dimension-formulas');
-    dimensionFormulas.innerHTML = '';
-    for (const [key, formula] of Object.entries(data.formulas.dimensions)) {
-        const formulaDiv = document.createElement('div');
-        formulaDiv.className = 'calculation-formula';
-        formulaDiv.textContent = formula;
-        dimensionFormulas.appendChild(formulaDiv);
-    }
-    
-    // Update board size formulas
-    const boardSizeFormulas = document.getElementById('board-size-formulas');
-    boardSizeFormulas.innerHTML = '';
-    for (const [key, formula] of Object.entries(data.formulas.board_sizes)) {
-        const formulaDiv = document.createElement('div');
-        formulaDiv.className = 'calculation-formula';
-        formulaDiv.textContent = formula;
-        boardSizeFormulas.appendChild(formulaDiv);
-    }
-    
-    // Update paper weight formulas
-    const paperWeightFormulas = document.getElementById('paper-weight-formulas');
-    paperWeightFormulas.innerHTML = '';
-    
-    // Add surface area formula
-    const surfaceAreaFormula = document.createElement('div');
-    surfaceAreaFormula.className = 'calculation-formula';
-    surfaceAreaFormula.textContent = 'Surface Area: ' + data.formulas.surface_area;
-    paperWeightFormulas.appendChild(surfaceAreaFormula);
-    
-    // Add paper weight formulas
-    for (const [key, formula] of Object.entries(data.formulas.paper_weights)) {
-        const formulaDiv = document.createElement('div');
-        formulaDiv.className = 'calculation-formula';
-        formulaDiv.textContent = formula;
-        paperWeightFormulas.appendChild(formulaDiv);
-    }
-    
-    // Update cost formulas
-    const costFormulas = document.getElementById('cost-formulas');
-    costFormulas.innerHTML = '';
-    for (const [key, formula] of Object.entries(data.formulas.costs)) {
-        const formulaDiv = document.createElement('div');
-        formulaDiv.className = 'calculation-formula';
-        formulaDiv.textContent = formula;
-        costFormulas.appendChild(formulaDiv);
-    }
-    
-    // Update constants if provided
-    if (data.constants) {
-        document.getElementById('length-shrinkage-factor').textContent = data.constants.length_shrinkage_factor;
-        document.getElementById('breadth-shrinkage-factor').textContent = data.constants.breadth_shrinkage_factor;
-        document.getElementById('height-shrinkage-factor').textContent = data.constants.height_shrinkage_factor;
-        document.getElementById('flute-tuf').textContent = data.constants.flute_tuf;
-        document.getElementById('paper-cost-per-kg').textContent = data.constants.paper_cost_per_kg;
-        document.getElementById('labor-cost-percentage').textContent = (data.constants.labor_cost_percentage * 100) + '%';
-    }
-}
-
-// Ensure the document ready function includes calling this
 document.addEventListener('DOMContentLoaded', function() {
-    // Make sure these selectors match your actual DOM elements
-    const numPliesSelect = document.getElementById('id_num_plies');
-    const calculateBtn = document.getElementById('calculate-btn');
+    console.log("Box form initialized");
     
-    // Set default to 3 plies if not already set
-    if (!numPliesSelect.value) {
-        numPliesSelect.value = "3";
+    // Define constants directly in HTML
+    const CONSTANTS = {
+        LENGTH_SHRINKAGE_FACTOR: 1.0060,
+        BREADTH_SHRINKAGE_FACTOR: 1.0060,
+        HEIGHT_SHRINKAGE_FACTOR: 1.0112,
+        FLUTE_TUF: 1.3500,
+        CM_TO_INCH: 2.5400,
+        PAPER_COST_PER_KG: 80,
+        LABOR_COST_PERCENTAGE: 0.3
+    };
+    
+    // Set up ply count change handler
+    const numPliesSelect = document.getElementById('id_num_plies');
+    if (numPliesSelect) {
+        numPliesSelect.addEventListener('change', function() {
+            const numPlies = parseInt(this.value) || 3;
+            const flutePaperFields = document.querySelector('.flute-paper-fields');
+            const sevenPlyFields = document.querySelector('.seven-ply-fields');
+            
+            if (numPlies < 5) {
+                if (flutePaperFields) flutePaperFields.style.display = 'none';
+                if (sevenPlyFields) sevenPlyFields.style.display = 'none';
+            } else if (numPlies >= 5 && numPlies < 7) {
+                if (flutePaperFields) flutePaperFields.style.display = 'block';
+                if (sevenPlyFields) sevenPlyFields.style.display = 'none';
+            } else if (numPlies >= 7) {
+                if (flutePaperFields) flutePaperFields.style.display = 'none';
+                if (sevenPlyFields) sevenPlyFields.style.display = 'block';
+            }
+        });
+        
+        // Initialize visibility
+        numPliesSelect.dispatchEvent(new Event('change'));
     }
     
-    // Add change event listener
-    numPliesSelect.addEventListener('change', updatePaperFieldsVisibility);
-    
-    // Add these two lines to ensure the flute paper fields are properly rendered
-    document.querySelectorAll('.flute-paper-fields input, .seven-ply-fields input').forEach(input => {
-        input.classList.add('form-control');
-    });
-    
-    // Call function on page load to set initial state
-    updatePaperFieldsVisibility();
-    
-    // Override the calculate button click handler
+    // Add click handler for calculate button
+    const calculateBtn = document.getElementById('calculate-btn');
     if (calculateBtn) {
         calculateBtn.addEventListener('click', function() {
-            const length = document.getElementById('id_length').value;
-            const breadth = document.getElementById('id_breadth').value;
-            const height = document.getElementById('id_height').value;
+            console.log("Calculate button clicked");
+            
+            // Get form values
+            const length = parseFloat(document.getElementById('id_length').value);
+            const breadth = parseFloat(document.getElementById('id_breadth').value);
+            const height = parseFloat(document.getElementById('id_height').value);
             const fluteType = document.getElementById('id_flute_type').value;
             const numPlies = parseInt(document.getElementById('id_num_plies').value) || 3;
             
@@ -451,145 +329,350 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Collect GSM values based on ply count
-            const paperGsms = {
-                top_paper_gsm: parseFloat(document.getElementById('id_top_paper_gsm').value) || 0,
-                bottom_paper_gsm: parseFloat(document.getElementById('id_bottom_paper_gsm').value) || 0
-            };
-            
-            if (numPlies >= 5) {
-                paperGsms.flute_paper_gsm = parseFloat(document.getElementById('id_flute_paper_gsm').value) || 0;
+            try {
+                // Calculate dimensions with shrinkage
+                const dimensions = {
+                    length: length * CONSTANTS.LENGTH_SHRINKAGE_FACTOR,
+                    breadth: breadth * CONSTANTS.BREADTH_SHRINKAGE_FACTOR,
+                    height: height * CONSTANTS.HEIGHT_SHRINKAGE_FACTOR,
+                    fluteSize: (breadth + 0.635) * 1.013575 / 2
+                };
+                
+                // Calculate board sizes
+                const boardSizes = {
+                    fullLengthInches: ((length + breadth) * 2 + 3.5 + 0.5) / CONSTANTS.CM_TO_INCH,
+                    halfLengthInches: ((length + breadth) + 3.5 + 0.4) / CONSTANTS.CM_TO_INCH,
+                    reelSize1Up: ((height + dimensions.fluteSize + dimensions.fluteSize) + 0.8) / CONSTANTS.CM_TO_INCH,
+                    reelSize2Up: (((height + dimensions.fluteSize + dimensions.fluteSize) * 2) + 0.8) / CONSTANTS.CM_TO_INCH,
+                    reelWidth: (breadth + height) / CONSTANTS.CM_TO_INCH
+                };
+                
+                // Determine UPS
+                let ups = "Unknown";
+                if (boardSizes.reelWidth < 20) {
+                    ups = "2 board length";
+                } else if (boardSizes.reelWidth >= 20 && boardSizes.reelWidth < 40) {
+                    ups = "1 board length";
+                } else if (boardSizes.reelWidth < 60) {
+                    ups = "full length";
+                } else if (boardSizes.fullLengthInches > 60) {
+                    ups = "half length";
+                } else {
+                    ups = "full length"; // Default
+                }
+                
+                // Collect GSM values based on ply count
+                const paperGsms = {
+                    top_paper_gsm: parseFloat(document.getElementById('id_top_paper_gsm').value) || 0,
+                    bottom_paper_gsm: parseFloat(document.getElementById('id_bottom_paper_gsm').value) || 0
+                };
+                
+                if (numPlies >= 5) {
+                    paperGsms.flute_paper_gsm = parseFloat(document.getElementById('id_flute_paper_gsm').value) || 0;
+                }
+                
+                if (numPlies === 7) {
+                    paperGsms.flute_paper1_gsm = parseFloat(document.getElementById('id_flute_paper1_gsm').value) || 0;
+                    paperGsms.middle_paper_gsm = parseFloat(document.getElementById('id_middle_paper_gsm').value) || 0;
+                    paperGsms.flute_paper2_gsm = parseFloat(document.getElementById('id_flute_paper2_gsm').value) || 0;
+                }
+                
+                // Calculate paper weights and costs
+                const paperArea = boardSizes.fullLengthInches * boardSizes.reelWidth; // in square inches
+
+                // For top paper (and similarly for bottom and middle papers)
+                const paperWeights = {};
+                paperWeights.top_paper_weight = (paperArea * paperGsms.top_paper_gsm) / 1550;
+
+                // For flute papers (with Take-Up Factor)
+                paperWeights.flute_paper_weight = (paperArea * paperGsms.flute_paper_gsm * CONSTANTS.FLUTE_TUF) / 1550;
+
+                const paperCosts = {};
+                
+                // Calculate top paper weight and cost
+                if (paperGsms.top_paper_gsm > 0) {
+                    paperCosts.top_paper_cost = paperWeights.top_paper_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperCosts.top_paper_cost = 0;
+                }
+                
+                // Calculate bottom paper weight and cost
+                if (paperGsms.bottom_paper_gsm > 0) {
+                    paperWeights.bottom_paper_weight = (paperArea * paperGsms.bottom_paper_gsm) / 1550;
+                    paperCosts.bottom_paper_cost = paperWeights.bottom_paper_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperWeights.bottom_paper_weight = 0;
+                    paperCosts.bottom_paper_cost = 0;
+                }
+                
+                // Calculate flute paper weight and cost for 5-ply
+                if (paperGsms.flute_paper_gsm > 0) {
+                    paperCosts.flute_paper_cost = paperWeights.flute_paper_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperCosts.flute_paper_cost = 0;
+                }
+                
+                // Calculate additional papers for 7-ply
+                if (paperGsms.flute_paper1_gsm > 0) {
+                    paperWeights.flute_paper1_weight = (paperArea * paperGsms.flute_paper1_gsm * CONSTANTS.FLUTE_TUF) / 1550;
+                    paperCosts.flute_paper1_cost = paperWeights.flute_paper1_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperWeights.flute_paper1_weight = 0;
+                    paperCosts.flute_paper1_cost = 0;
+                }
+                
+                if (paperGsms.middle_paper_gsm > 0) {
+                    paperWeights.middle_paper_weight = (paperArea * paperGsms.middle_paper_gsm) / 1550;
+                    paperCosts.middle_paper_cost = paperWeights.middle_paper_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperWeights.middle_paper_weight = 0;
+                    paperCosts.middle_paper_cost = 0;
+                }
+                
+                if (paperGsms.flute_paper2_gsm > 0) {
+                    paperWeights.flute_paper2_weight = (paperArea * paperGsms.flute_paper2_gsm * CONSTANTS.FLUTE_TUF) / 1550;
+                    paperCosts.flute_paper2_cost = paperWeights.flute_paper2_weight * CONSTANTS.PAPER_COST_PER_KG;
+                } else {
+                    paperWeights.flute_paper2_weight = 0;
+                    paperCosts.flute_paper2_cost = 0;
+                }
+                
+                // Calculate total material weight
+                const totalWeight = Object.values(paperWeights).reduce((sum, weight) => sum + weight, 0);
+                
+                // Calculate total material cost
+                const totalCost = Object.values(paperCosts).reduce((sum, cost) => sum + cost, 0);
+                
+                // Calculate production costs
+                const costs = {
+                    material_cost: totalCost,
+                    labor_cost: totalCost * CONSTANTS.LABOR_COST_PERCENTAGE,
+                    cost_per_box: totalCost + (totalCost * CONSTANTS.LABOR_COST_PERCENTAGE),
+                    num_boxes: 1
+                };
+                costs.total_order_cost = costs.cost_per_box * costs.num_boxes;
+                
+                // Create results object
+                const results = {
+                    dimensions: dimensions,
+                    boardSizes: {
+                        ...boardSizes,
+                        full_length_in: boardSizes.fullLengthInches,
+                        half_length_in: boardSizes.halfLengthInches
+                    },
+                    ups: ups,
+                    paperArea: paperArea,
+                    paper_weights: paperWeights,
+                    total_material_weight: totalWeight,
+                    cost_estimates: costs
+                };
+                
+                // Display the results
+                displayResults(results, length, breadth, height, paperGsms, CONSTANTS);
+                
+                // Show calculation details section
+                document.getElementById('calculation-details').style.display = 'block';
+                
+            } catch (error) {
+                console.error("Error during calculation:", error);
+                alert("Error: " + error.message);
             }
-            
-            if (numPlies === 7) {
-                paperGsms.flute_paper1_gsm = parseFloat(document.getElementById('id_flute_paper1_gsm').value) || 0;
-                paperGsms.middle_paper_gsm = parseFloat(document.getElementById('id_middle_paper_gsm').value) || 0;
-                paperGsms.flute_paper2_gsm = parseFloat(document.getElementById('id_flute_paper2_gsm').value) || 0;
-            }
-            
-            // Build query string
-            const params = new URLSearchParams({
-                length: length,
-                breadth: breadth,
-                height: height,
-                flute_type: fluteType,
-                num_plies: numPlies,
-                ...paperGsms
-            });
-            
-            // Make AJAX request to get calculations
-            fetch(`/finished-goods/calculations/?${params}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Create results HTML
-                    const resultsHTML = `
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h5>Box Production Specifications</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Dimensions with Shrinkage</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Length (cm)</th>
-                                                <td>${data.dimensions.length.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Breadth (cm)</th>
-                                                <td>${data.dimensions.breadth.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Height (cm)</th>
-                                                <td>${data.dimensions.height.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Flute Size (cm)</th>
-                                                <td>${data.dimensions.flute_size.toFixed(4)}</td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <h6>Board Specifications</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Full Length (in)</th>
-                                                <td>${data.board_sizes.full_length_in.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Half Length (in)</th>
-                                                <td>${data.board_sizes.half_length_in.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Reel Size 1-Up (in)</th>
-                                                <td>${data.board_sizes.reel_size_1up.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Reel Size 2-Up (in)</th>
-                                                <td>${data.board_sizes.reel_size_2up.toFixed(4)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>UPS (Production Mode)</th>
-                                                <td>${data.ups}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <h6>Paper Requirements</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Total Surface Area</th>
-                                                <td>${data.total_area.toFixed(6)} m²</td>
-                                            </tr>
-                                            ${Object.entries(data.paper_weights).map(([key, value]) => `
-                                                <tr>
-                                                    <th>${key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</th>
-                                                    <td>${value.toFixed(4)} kg</td>
-                                                </tr>
-                                            `).join('')}
-                                            <tr>
-                                                <th>Total Material Weight</th>
-                                                <td>${data.total_material_weight.toFixed(6)} kg</td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <h6>Cost Estimates</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Material Cost</th>
-                                                <td>₹${data.cost_estimates.material_cost.toFixed(6)}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Labor Cost</th>
-                                                <td>₹${data.cost_estimates.labor_cost.toFixed(6)}</td>
-                                            </tr>
-                                            <tr class="table-primary">
-                                                <th>Total Production Cost</th>
-                                                <td>₹${data.cost_estimates.total_cost.toFixed(6)}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Update the results div
-                    document.getElementById('calculation-results').innerHTML = resultsHTML;
-                    
-                    // Display calculation details
-                    displayCalculationDetails(data);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('calculation-results').innerHTML = `
-                        <div class="alert alert-danger">
-                            Error calculating box requirements. Please try again.
-                        </div>
-                    `;
-                });
         });
+    }
+    
+    // Function to display calculation results
+    function displayResults(results, length, breadth, height, paperGsms, CONSTANTS) {
+        // Create results HTML
+        const resultsHTML = `
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5>Box Production Specifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Dimensions with Shrinkage</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Length (cm)</th>
+                                    <td>${results.dimensions.length.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Breadth (cm)</th>
+                                    <td>${results.dimensions.breadth.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Height (cm)</th>
+                                    <td>${results.dimensions.height.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Flute Size (cm)</th>
+                                    <td>${results.dimensions.fluteSize.toFixed(4)}</td>
+                                </tr>
+                            </table>
+                            
+                            <h6>Board Specifications</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Full Length (in)</th>
+                                    <td>${results.boardSizes.full_length_in.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Half Length (in)</th>
+                                    <td>${results.boardSizes.half_length_in.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Reel Size 1-up (in)</th>
+                                    <td>${results.boardSizes.reelSize1Up.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Reel Size 2-up (in)</th>
+                                    <td>${results.boardSizes.reelSize2Up.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Reel Width (in)</th>
+                                    <td>${results.boardSizes.reelWidth.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>UPS (Production Mode)</th>
+                                    <td>${results.ups}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Paper Requirements</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Paper Area</th>
+                                    <td>${results.paperArea.toFixed(6)} in²</td>
+                                </tr>
+                                ${Object.entries(results.paper_weights)
+                                    .filter(([key, value]) => key !== 'total_material_weight' && value > 0)
+                                    .map(([key, value]) => `
+                                        <tr>
+                                            <th>${key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</th>
+                                            <td>${value.toFixed(6)} kg</td>
+                                        </tr>
+                                    `)
+                                    .join('')}
+                                <tr>
+                                    <th>Total Material Weight</th>
+                                    <td>${results.total_material_weight.toFixed(6)} kg</td>
+                                </tr>
+                            </table>
+                            
+                            <h6>Cost Estimates</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Material Cost</th>
+                                    <td>₹${results.cost_estimates.material_cost.toFixed(4)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Labor Cost</th>
+                                    <td>₹${results.cost_estimates.labor_cost.toFixed(4)}</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th>Total Production Cost</th>
+                                    <td>₹${results.cost_estimates.cost_per_box.toFixed(4)}</td>
+                                </tr>
+                                ${results.cost_estimates.num_boxes > 1 ? `
+                                <tr class="table-info">
+                                    <th>Total Order Cost (${results.cost_estimates.num_boxes} boxes)</th>
+                                    <td>₹${results.cost_estimates.total_order_cost.toFixed(4)}</td>
+                                </tr>
+                                ` : ''}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Update the results div
+        document.getElementById('calculation-results').innerHTML = resultsHTML;
+        
+        // Update formulas
+        updateFormulas(results, length, breadth, height, paperGsms, CONSTANTS);
+    }
+    
+    // Function to update the formulas display
+    function updateFormulas(results, length, breadth, height, paperGsms, CONSTANTS) {
+        // Dimensions formulas
+        document.getElementById('dimension-formulas').innerHTML = `
+            <div class="calculation-formula">L (cm) = ${length} × ${CONSTANTS.LENGTH_SHRINKAGE_FACTOR.toFixed(4)} = ${results.dimensions.length.toFixed(4)}</div>
+            <div class="calculation-formula">B (cm) = ${breadth} × ${CONSTANTS.BREADTH_SHRINKAGE_FACTOR.toFixed(4)} = ${results.dimensions.breadth.toFixed(4)}</div>
+            <div class="calculation-formula">H (cm) = ${height} × ${CONSTANTS.HEIGHT_SHRINKAGE_FACTOR.toFixed(4)} = ${results.dimensions.height.toFixed(4)}</div>
+            <div class="calculation-formula">F (cm) = (${breadth} + 0.6350) × 1.0136 / 2 = ${results.dimensions.fluteSize.toFixed(4)}</div>
+        `;
+        
+        // Board size formulas
+        document.getElementById('board-size-formulas').innerHTML = `
+            <div class="calculation-formula">Length (L") for full length = ((${length}+${breadth}) × 2 + 3.5 + 0.5) / ${CONSTANTS.CM_TO_INCH.toFixed(4)} = ${results.boardSizes.full_length_in.toFixed(4)}"</div>
+            <div class="calculation-formula">Length (L") for half length = ((${length}+${breadth}) + 3.5 + 0.4) / ${CONSTANTS.CM_TO_INCH.toFixed(4)} = ${results.boardSizes.half_length_in.toFixed(4)}"</div>
+            <div class="calculation-formula">Reel size (R) for 1 up = ((${height}+${results.dimensions.fluteSize.toFixed(4)}+${results.dimensions.fluteSize.toFixed(4)})+0.8) / ${CONSTANTS.CM_TO_INCH.toFixed(4)} = ${results.boardSizes.reelSize1Up.toFixed(4)}"</div>
+            <div class="calculation-formula">Reel size (R) for 2 up = (((${height}+${results.dimensions.fluteSize.toFixed(4)}+${results.dimensions.fluteSize.toFixed(4)})×2)+0.8) / ${CONSTANTS.CM_TO_INCH.toFixed(4)} = ${results.boardSizes.reelSize2Up.toFixed(4)}"</div>
+            <div class="calculation-formula">Reel Width = (${breadth}+${height})/${CONSTANTS.CM_TO_INCH.toFixed(4)} = ${results.boardSizes.reelWidth.toFixed(4)}"</div>
+        `;
+        
+        // Paper weight formulas
+        let paperWeightHTML = `
+            <div class="calculation-formula">Paper Area = Full Length (${results.boardSizes.full_length_in.toFixed(4)}") × Reel Width (${results.boardSizes.reelWidth.toFixed(4)}") = ${results.paperArea.toFixed(6)} in²</div>
+        `;
+        
+        if (paperGsms.top_paper_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Top Paper Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.top_paper_gsm}) / 1550 = ${results.paper_weights.top_paper_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        if (paperGsms.bottom_paper_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Bottom Paper Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.bottom_paper_gsm}) / 1550 = ${results.paper_weights.bottom_paper_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        if (paperGsms.flute_paper_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Flute Paper Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.flute_paper_gsm} × ${CONSTANTS.FLUTE_TUF.toFixed(4)}) / 1550 = ${results.paper_weights.flute_paper_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        if (paperGsms.flute_paper1_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Flute Paper 1 Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.flute_paper1_gsm} × ${CONSTANTS.FLUTE_TUF.toFixed(4)}) / 1550 = ${results.paper_weights.flute_paper1_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        if (paperGsms.middle_paper_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Middle Paper Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.middle_paper_gsm}) / 1550 = ${results.paper_weights.middle_paper_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        if (paperGsms.flute_paper2_gsm > 0) {
+            paperWeightHTML += `
+                <div class="calculation-formula">Flute Paper 2 Weight = (${results.paperArea.toFixed(4)} × ${paperGsms.flute_paper2_gsm} × ${CONSTANTS.FLUTE_TUF.toFixed(4)}) / 1550 = ${results.paper_weights.flute_paper2_weight.toFixed(6)} kg</div>
+            `;
+        }
+        
+        paperWeightHTML += `
+            <div class="calculation-formula">Total Material Weight = ${results.total_material_weight.toFixed(6)} kg</div>
+        `;
+        
+        document.getElementById('paper-weight-formulas').innerHTML = paperWeightHTML;
+        
+        // Cost formulas
+        const costFormulasHTML = `
+            <div class="calculation-formula">Material Cost = ${results.total_material_weight.toFixed(6)} kg × ₹${CONSTANTS.PAPER_COST_PER_KG} = ₹${results.cost_estimates.material_cost.toFixed(4)}</div>
+            <div class="calculation-formula">Labor Cost = ₹${results.cost_estimates.material_cost.toFixed(4)} × ${CONSTANTS.LABOR_COST_PERCENTAGE} = ₹${results.cost_estimates.labor_cost.toFixed(4)}</div>
+            <div class="calculation-formula">Total Cost = ₹${results.cost_estimates.material_cost.toFixed(4)} + ₹${results.cost_estimates.labor_cost.toFixed(4)} = ₹${results.cost_estimates.cost_per_box.toFixed(4)}</div>
+            ${results.cost_estimates.num_boxes > 1 ? 
+                `<div class="calculation-formula">Total Order Cost (${results.cost_estimates.num_boxes} boxes) = ₹${results.cost_estimates.cost_per_box.toFixed(4)} × ${results.cost_estimates.num_boxes} = ₹${results.cost_estimates.total_order_cost.toFixed(4)}</div>` 
+                : ''}
+        `;
+        
+        document.getElementById('cost-formulas').innerHTML = costFormulasHTML;
     }
 });
 </script>
