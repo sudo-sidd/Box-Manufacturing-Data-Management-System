@@ -106,3 +106,8 @@ footer {
     flex-shrink: 0;
     margin-top: auto;
 }
+.disabled-field {
+    background-color: #f8f9fa;
+    color: #adb5bd;
+    cursor: not-allowed;
+}

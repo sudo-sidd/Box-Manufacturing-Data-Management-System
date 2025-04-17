@@ -107,39 +107,41 @@
                         </div>
                     </div>
                     
-                    <!-- 5-ply fields (show/hide based on selection) -->
+                    <!-- 5-ply fields (show when num_plies >= 5) -->
                     <div class="flute-paper-fields" style="display:none;">
                         <hr>
+                        <h6>5-Ply Paper Requirements</h6>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper_gsm.id_for_label }}">Flute Paper GSM</label>
-                                    {{ paper_form.flute_paper_gsm }}
+                                    <label for="id_flute_paper_gsm">Flute Paper GSM</label>
+                                    <input type="number" name="flute_paper_gsm" class="form-control" id="id_flute_paper_gsm" value="100">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper_bf.id_for_label }}">Flute Paper BF</label>
-                                    {{ paper_form.flute_paper_bf }}
+                                    <label for="id_flute_paper_bf">Flute Paper BF</label>
+                                    <input type="number" name="flute_paper_bf" class="form-control" id="id_flute_paper_bf" value="16">
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- 7-ply fields (show/hide based on selection) -->
+                    <!-- 7-ply fields (show when num_plies >= 7) -->
                     <div class="seven-ply-fields" style="display:none;">
                         <hr>
+                        <h6>7-Ply Additional Paper Requirements</h6>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper1_gsm.id_for_label }}">Flute Paper 1 GSM</label>
-                                    {{ paper_form.flute_paper1_gsm }}
+                                    <label for="id_flute_paper1_gsm">Flute Paper 1 GSM</label>
+                                    <input type="number" name="flute_paper1_gsm" class="form-control" id="id_flute_paper1_gsm" value="100">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper1_bf.id_for_label }}">Flute Paper 1 BF</label>
-                                    {{ paper_form.flute_paper1_bf }}
+                                    <label for="id_flute_paper1_bf">Flute Paper 1 BF</label>
+                                    <input type="number" name="flute_paper1_bf" class="form-control" id="id_flute_paper1_bf" value="16">
                                 </div>
                             </div>
                         </div>
@@ -147,14 +149,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.middle_paper_gsm.id_for_label }}">Middle Paper GSM</label>
-                                    {{ paper_form.middle_paper_gsm }}
+                                    <label for="id_middle_paper_gsm">Middle Paper GSM</label>
+                                    <input type="number" name="middle_paper_gsm" class="form-control" id="id_middle_paper_gsm" value="100">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.middle_paper_bf.id_for_label }}">Middle Paper BF</label>
-                                    {{ paper_form.middle_paper_bf }}
+                                    <label for="id_middle_paper_bf">Middle Paper BF</label>
+                                    <input type="number" name="middle_paper_bf" class="form-control" id="id_middle_paper_bf" value="16">
                                 </div>
                             </div>
                         </div>
@@ -162,14 +164,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper2_gsm.id_for_label }}">Flute Paper 2 GSM</label>
-                                    {{ paper_form.flute_paper2_gsm }}
+                                    <label for="id_flute_paper2_gsm">Flute Paper 2 GSM</label>
+                                    <input type="number" name="flute_paper2_gsm" class="form-control" id="id_flute_paper2_gsm" value="100">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="{{ paper_form.flute_paper2_bf.id_for_label }}">Flute Paper 2 BF</label>
-                                    {{ paper_form.flute_paper2_bf }}
+                                    <label for="id_flute_paper2_bf">Flute Paper 2 BF</label>
+                                    <input type="number" name="flute_paper2_bf" class="form-control" id="id_flute_paper2_bf" value="16">
                                 </div>
                             </div>
                         </div>
@@ -233,23 +235,71 @@ function updateCalculations() {
     }
 }
 
-// Add event listener for the num_plies field
-document.addEventListener('DOMContentLoaded', function() {
-    const numPliesSelect = document.getElementById('id_num_plies');
-    numPliesSelect.addEventListener('change', function() {
-        updatePaperRequirements(this.value);
-        updateCalculations(); // Recalculate costs when plies change
-    });
+// Replace the existing updatePaperFieldsVisibility function with this:
+function updatePaperFieldsVisibility() {
+    const numPlies = parseInt(document.getElementById('id_num_plies').value) || 3;
+    const flutePaperFields = document.querySelector('.flute-paper-fields');
+    const sevenPlyFields = document.querySelector('.seven-ply-fields');
     
-    const numPlies = document.getElementById('id_num_plies').value;
-    updatePaperRequirements(numPlies);
-    
-    ['length', 'breadth', 'height'].forEach(field => {
-        document.getElementById(`id_${field}`).addEventListener('input', updateCalculations);
-    });
+    // Basic logic for showing/hiding sections
+    if (numPlies < 5) {
+        // For 3-ply, hide both 5-ply and 7-ply fields
+        flutePaperFields.style.display = 'none';
+        sevenPlyFields.style.display = 'none';
+    } else if (numPlies >= 5 && numPlies < 7) {
+        // For 5-ply, show only 5-ply fields
+        flutePaperFields.style.display = 'block';
+        sevenPlyFields.style.display = 'none';
+        
+        // Enable input fields for 5-ply section
+        enableFormFields(flutePaperFields, true);
+    } else if (numPlies >= 7) {
+        // For 7-ply, hide 5-ply fields and show 7-ply fields
+        flutePaperFields.style.display = 'none';
+        sevenPlyFields.style.display = 'block';
+        
+        // Disable 5-ply fields and enable 7-ply fields
+        enableFormFields(flutePaperFields, false);
+        enableFormFields(sevenPlyFields, true);
+    }
+}
 
-    const inputs = document.querySelectorAll('input[type="text"], input[type="number"]');
-    inputs.forEach(input => setupAutoSuggest(input));
+// Add this helper function to enable/disable form fields
+function enableFormFields(container, enable) {
+    const inputs = container.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (enable) {
+            input.removeAttribute('disabled');
+            input.classList.remove('disabled-field');
+        } else {
+            input.setAttribute('disabled', 'disabled');
+            input.classList.add('disabled-field');
+        }
+    });
+}
+
+// Ensure the document ready function includes calling this
+document.addEventListener('DOMContentLoaded', function() {
+    // Make sure these selectors match your actual DOM elements
+    const numPliesSelect = document.getElementById('id_num_plies');
+    
+    // Set default to 3 plies if not already set
+    if (!numPliesSelect.value) {
+        numPliesSelect.value = "3";
+    }
+    
+    // Add change event listener
+    numPliesSelect.addEventListener('change', updatePaperFieldsVisibility);
+    
+    // Add these two lines to ensure the flute paper fields are properly rendered
+    document.querySelectorAll('.flute-paper-fields input, .seven-ply-fields input').forEach(input => {
+        input.classList.add('form-control');
+    });
+    
+    // Call function on page load to set initial state
+    updatePaperFieldsVisibility();
+    
+    // Add existing calculation setup code here...
 });
 </script>
 {% endblock %}

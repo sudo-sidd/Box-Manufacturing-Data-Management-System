@@ -60,6 +60,11 @@ class BoxCreateView(LoginRequiredMixin, CreateView):
         else:
             return self.render_to_response(self.get_context_data(form=form))
 
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['num_plies'] = 3  # Default to 3 plies
+        return initial
+
 class BoxListView(LoginRequiredMixin, ListView):
     model = BoxDetails
     template_name = 'finished_goods/box_list.html'

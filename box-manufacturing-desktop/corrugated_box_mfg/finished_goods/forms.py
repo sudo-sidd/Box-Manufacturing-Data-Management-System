@@ -58,6 +58,33 @@ class BoxPaperRequirementsForm(forms.ModelForm):
             else:
                 field.widget.attrs.update({'class': 'form-control'})
 
+    def clean(self):
+        cleaned_data = super().clean()
+        num_plies = cleaned_data.get('num_plies')
+        
+        # For 3-ply boxes, only top and bottom paper are required
+        # For 5-ply boxes, also require flute_paper
+        if num_plies >= 5:
+            flute_paper_gsm = cleaned_data.get('flute_paper_gsm')
+            flute_paper_bf = cleaned_data.get('flute_paper_bf')
+            if not flute_paper_gsm:
+                self.add_error('flute_paper_gsm', 'Required for 5-ply boxes')
+            if not flute_paper_bf:
+                self.add_error('flute_paper_bf', 'Required for 5-ply boxes')
+        
+        # For 7-ply boxes, also require middle paper and two flute papers
+        if num_plies >= 7:
+            fields_to_check = [
+                'flute_paper1_gsm', 'flute_paper1_bf',
+                'middle_paper_gsm', 'middle_paper_bf',
+                'flute_paper2_gsm', 'flute_paper2_bf'
+            ]
+            for field in fields_to_check:
+                if not cleaned_data.get(field):
+                    self.add_error(field, f'Required for 7-ply boxes')
+        
+        return cleaned_data
+
 class BoxOrderForm(forms.ModelForm):
     class Meta:
         model = BoxOrder

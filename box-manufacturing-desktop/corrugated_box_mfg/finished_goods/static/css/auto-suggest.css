@@ -21,3 +21,8 @@
 .suggestion-item:hover {
     background-color: #f5f5f5;
 }
+.disabled-field {
+    background-color: #f8f9fa;
+    color: #adb5bd;
+    cursor: not-allowed;
+}

@@ -291,6 +291,12 @@ const formTemplates = {
                     <input type="number" class="form-control" id="total_qty" name="total_qty" required>
                 </div>
             </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="weight_per_coil" class="form-label">Weight per Coil (Kg)</label>
+                    <input type="number" step="0.01" class="form-control" id="weight_per_coil" name="weight_per_coil" required>
+                </div>
+            </div>
         </div>
     `
 };
@@ -313,6 +319,7 @@ function calculateTotals() {
             document.getElementById('weight_per_bag')?.value || 
             document.getElementById('weight_per_can')?.value || 
             document.getElementById('weight_per_roll')?.value || 
+            document.getElementById('weight_per_coil')?.value || 
             0
         );
         quantity = totalQty * weightPerUnit;
@@ -499,7 +506,7 @@ function setupSuggestions() {
         'Pasting Gum': ['gum_type', 'weight_per_bag', 'company_name'],
         'Ink': ['color', 'weight_per_can', 'company_name'],
         'Strapping Roll': ['roll_type', 'meters_per_roll', 'weight_per_roll', 'company_name'],
-        'Pin Coil': ['coil_type', 'company_name']
+        'Pin Coil': ['coil_type', 'weight_per_coil', 'company_name']
     };
     
     // Apply autosuggest to appropriate fields for the selected item type
