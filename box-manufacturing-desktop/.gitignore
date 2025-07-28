@@ -10,3 +10,11 @@ dist/
 build/
 corrugated_box_mfg/dist
 corrugated_box_mfg/build
+
+# Docker & DB
+postgres_data/
+.env
+*.db
+docker-compose.override.yml
+
+*.pyc

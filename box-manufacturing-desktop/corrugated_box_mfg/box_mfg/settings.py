@@ -77,7 +77,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'box_mfg.wsgi.application'
 
 # Database configuration
-if getattr(sys, 'frozen', False):
+# Use docker_settings.py if running in Docker (DJANGO_DB_HOST is set)
+if os.environ.get('DJANGO_DB_HOST'):
+    try:
+        from docker_settings import *
+    except ImportError:
+        pass
+elif getattr(sys, 'frozen', False):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

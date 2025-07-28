@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: boxmfg
+      POSTGRES_USER: boxuser
+      POSTGRES_PASSWORD: boxpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./box-manufacturing-desktop/corrugated_box_mfg/:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_NAME=boxmfg
+      - DJANGO_DB_USER=boxuser
+      - DJANGO_DB_PASSWORD=boxpass
+
+volumes:
+  postgres_data:
